@@ -444,7 +444,7 @@ function ensurePhoto(b){
 // ---------- ESA WorldCover 2021 (3x3 degree COGs on S3; read through serve.py since the bucket sends no CORS headers) ----------
 const WC='https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/';
 // local: serve.py relays; live: the Cloudflare Worker in worker/proxy.js (set its URL here after deploying)
-const RELAY='https://plutoootopo-relay.YOUR-SUBDOMAIN.workers.dev/';
+const RELAY='https://plutoootopo.creative-0f6.workers.dev/';
 const proxied=u=>(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)?'/proxy':RELAY)+'?u='+encodeURIComponent(u);
 // class -> plant density weight (a land cover proxy, not NDVI)
 const VEG={10:1,95:1,20:.6,90:.5,30:.35,40:.35,100:.2};
