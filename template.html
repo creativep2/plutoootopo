@@ -1,0 +1,718 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terrain Press</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: workbench. Fixed-width control rail on the left, artboard fills the rest; stacks on phones. */
+:root{
+  --bg:#F3F4F5; --panel:#FCFCFC; --fg:#17191C; --muted:#6B7682; --line:#E3E6E8;
+  --accent:#0032FF; --accent-soft:#E5EBFF; --stage:#E3E6E8;
+  --ui:"Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#17191C; --panel:#1C1F22; --fg:#F3F4F5; --muted:#919AA5; --line:#2B3035;
+  --accent:#6684FF; --accent-soft:#001466; --stage:#0F1113; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17191C; --panel:#1C1F22; --fg:#F3F4F5; --muted:#919AA5; --line:#2B3035;
+  --accent:#6684FF; --accent-soft:#001466; --stage:#0F1113; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:13px}
+.app{display:grid;grid-template-columns:320px minmax(0,1fr);height:100%;min-height:0}
+aside{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;
+  padding-block:18px 28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:16px;display:flex;flex-direction:column;gap:20px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.brand h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.01em}
+.brand span{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:9px}
+section>h2{margin:0;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1;min-width:0}
+select,input[type=text],input[type=password]{font:inherit;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.rng{display:grid;grid-template-columns:88px 1fr 46px;align-items:center;gap:8px;font-size:12px}
+.rng output{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{font:inherit;font-size:11.5px;padding:7px 2px;border:0;background:transparent;color:var(--fg);cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--fg);color:var(--panel)}
+.swatches{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.sw{aspect-ratio:1;max-width:100%;border-radius:6px;border:1px solid var(--line);cursor:pointer;padding:0;position:relative;overflow:hidden}
+.sw[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:2px}
+.sw i{position:absolute;inset:auto 0 0 0;height:45%}
+.sw b{position:absolute;right:4px;top:4px;width:7px;height:7px;border-radius:50%}
+.colors{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.colors label{font-size:11px;color:var(--muted)}
+input[type=color]{width:100%;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:2px}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.checks label{flex-direction:row;align-items:center;gap:6px}
+button.btn{font:inherit;font-weight:600;padding:9px 12px;border-radius:7px;border:1px solid var(--fg);background:var(--fg);color:var(--panel);cursor:pointer}
+button.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:12px;line-height:1.45;padding:9px 10px;border-radius:7px;background:var(--accent-soft);color:var(--fg)}
+.status b{font-weight:600}
+.status.real{background:color-mix(in srgb, #1ECCC9 22%, transparent)}
+.steps{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:12px;line-height:1.45;color:var(--fg)}
+.steps a{color:var(--accent);font-weight:600;word-break:break-all}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.45;margin:0}
+.file{position:relative}
+.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--stage)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;padding-left:16px;padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.meta{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.meta strong{color:var(--fg);font-weight:500}
+.actions{display:flex;gap:8px}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+#art{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+#art svg{display:block;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.08),0 12px 40px rgba(0,0,0,.12);background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/16px 16px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--panel);padding:9px 14px;border-radius:8px;font-size:12.5px;z-index:20}
+.modal{position:fixed;inset:0;background:rgba(10,12,14,.72);display:flex;align-items:center;justify-content:center;padding:24px;z-index:30}
+.modal .card{background:var(--panel);border-radius:10px;padding:16px;max-width:min(920px,100%);max-height:100%;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.modal img{max-height:70vh;object-fit:contain;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/16px 16px}
+.modal textarea{width:100%;height:220px;font-family:var(--mono);font-size:11px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;height:auto}
+  aside{border-right:0;border-bottom:1px solid var(--line);padding-right:max(16px,env(safe-area-inset-right,0px))}
+  main{min-height:80vh}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+#drawBox[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent)}
+#art{touch-action:none;cursor:grab}
+.seg button:nth-child(-n+4){border-bottom:1px solid var(--line)}
+.seg button:nth-child(4n){border-right:0}
+button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
+</style>
+
+<div class="app">
+<aside>
+  <div class="brand"><h1>Terrain Press</h1><span>SEA · ADM1 · v2</span></div>
+
+  <section>
+    <h2>Region</h2>
+    <label>Country<select id="country"></select></label>
+    <label>Province<select id="province"></select></label>
+    <div class="row"><button class="btn ghost" id="drawBox" type="button" aria-pressed="false">Lasso area</button><button class="btn ghost" id="clearBox" type="button" hidden>Back to province</button></div>
+    <p class="hint">Drag the map to pan, scroll to zoom. Lasso area: click it, then draw freehand around what you want (tip: turn on Water to find a river first).</p>
+  </section>
+
+  <section>
+    <h2>Elevation</h2>
+    <div id="demStatus" class="status"></div>
+    <div class="checks"><label><input type="checkbox" id="autoDem" checked> Fetch automatically (AWS Terrarium)</label></div>
+    <p class="hint">Or load your own GeoTIFF:</p>
+    <ol class="steps">
+      <li>Get a free API key at <a href="https://portal.opentopography.org/requestService?service=api" target="_blank" rel="noopener">OpenTopography</a> and paste it here.
+        <input type="password" id="apikey" placeholder="OpenTopography API key" autocomplete="off" style="margin-top:6px"></li>
+      <li><a id="dlLink" href="#" target="_blank" rel="noopener">Download the GeoTIFF for this area</a> <span id="dlInfo" class="hint"></span></li>
+      <li><div class="file"><button class="btn ghost" type="button" style="width:100%">Load GeoTIFF…</button><input type="file" id="demFile" accept=".tif,.tiff,image/tiff"></div></li>
+    </ol>
+    <p class="hint">One country-wide file covers every province inside it. Without a file, the preview uses stylized terrain built from the shape only.</p>
+  </section>
+
+  <section>
+    <h2>Style</h2>
+    <div class="seg" id="style">
+      <button data-v="atlas" aria-pressed="true">Atlas</button>
+      <button data-v="contour" aria-pressed="false">Contour</button>
+      <button data-v="halftone" aria-pressed="false">Halftone</button>
+      <button data-v="ridges" aria-pressed="false">Ridges</button>
+      <button data-v="bands" aria-pressed="false">Bands</button>
+      <button data-v="heat" aria-pressed="false">Heat</button>
+      <button data-v="outline" aria-pressed="false">Outline</button>
+      <button data-v="photo" aria-pressed="false">Photo</button>
+    </div>
+    <div class="row">
+      <label>Artboard<select id="ratio"><option value="1:1">1:1 · 1600</option><option value="4:5">4:5 · 1600×2000</option><option value="16:9">16:9 · 1920×1080</option><option value="3:4">3:4 · 1500×2000</option></select></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Palette</h2>
+    <div class="swatches" id="swatches"></div>
+    <div class="colors">
+      <label>Paper<input type="color" id="cPaper"></label>
+      <label>Land<input type="color" id="cLand"></label>
+      <label>Ink<input type="color" id="cInk"></label>
+      <label>Chip<input type="color" id="cChip"></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ramps</h2>
+    <div class="colors">
+      <label>Topo low<input type="color" id="tLo" value="#A9C79A"></label>
+      <label>Topo high<input type="color" id="tHi" value="#2F4A2C"></label>
+      <label>Plants low<input type="color" id="vLo" value="#E4EFC4"></label>
+      <label>Plants high<input type="color" id="vHi" value="#2E6B34"></label>
+      <label>Water<input type="color" id="cWater" value="#7FB2D9"></label>
+    </div>
+    <label>Plants as<select id="vegMode"><option value="heat">Heat map</option><option value="bands">Solid bands</option><option value="dots">Dots</option></select></label>
+    <label>Photo source<select id="photoSrc">
+      <option value="esri">Satellite · Esri World Imagery</option>
+      <option value="s2">Satellite · Sentinel-2 cloudless 2016</option>
+      <option value="osm">Road map · OpenStreetMap</option>
+      <option value="topo">Terrain · OpenTopoMap</option></select></label>
+    <p class="hint">Topo colors drive the Bands and Heat styles. Photo needs the local server.</p>
+  </section>
+
+  <section>
+    <h2>Detail</h2>
+    <div class="rng"><span>Resolution</span><input type="range" id="res" min="80" max="360" step="10" value="220"><output></output></div>
+    <div class="rng"><span>Lines</span><input type="range" id="levels" min="5" max="60" step="1" value="22"><output></output></div>
+    <div class="rng"><span>Smoothing</span><input type="range" id="smooth" min="0" max="6" step="1" value="1"><output></output></div>
+    <div class="rng"><span>Relief</span><input type="range" id="exag" min="0.5" max="6" step="0.25" value="2"><output></output></div>
+    <div class="rng"><span>Dot / row gap</span><input type="range" id="gap" min="6" max="40" step="1" value="14"><output></output></div>
+    <div class="rng"><span>Padding</span><input type="range" id="pad" min="0" max="25" step="1" value="10"><output></output></div>
+  </section>
+
+  <section>
+    <h2>Land cover</h2>
+    <div class="checks">
+      <label><input type="checkbox" id="lCity"> Cities</label>
+      <label><input type="checkbox" id="lVeg"> Plant density</label>
+      <label><input type="checkbox" id="lWater"> Water</label>
+    </div>
+    <p class="hint" id="lcStatus">ESA WorldCover 2021, 10 m. Needs the local server: <code>python3 serve.py</code></p>
+  </section>
+
+  <section>
+    <h2>Overlays</h2>
+    <div class="checks">
+      <label><input type="checkbox" id="oOutline" checked> Outline</label>
+      <label><input type="checkbox" id="oNeighbors" checked> Neighbours</label>
+      <label><input type="checkbox" id="oPin" checked> Pin label</label>
+      <label><input type="checkbox" id="oCoords" checked> Coordinates</label>
+      <label><input type="checkbox" id="oScale" checked> Scale bar</label>
+      <label><input type="checkbox" id="oGrid"> Grid</label>
+      <label><input type="checkbox" id="oGrain" checked> Grain</label>
+      <label><input type="checkbox" id="oTransparent"> No paper</label>
+    </div>
+    <label>Pin text<input type="text" id="pinText" placeholder="Province name"></label>
+  </section>
+</aside>
+
+<main>
+  <div class="bar">
+    <div class="meta" id="meta"></div>
+    <div class="actions">
+      <button class="btn ghost sq" id="zIn" type="button" aria-label="Zoom in">+</button>
+      <button class="btn ghost sq" id="zOut" type="button" aria-label="Zoom out">−</button>
+      <button class="btn ghost sq" id="zFit" type="button">Fit</button>
+      <button class="btn ghost" id="copySvg" type="button">Copy SVG</button>
+      <button class="btn" id="makePng" type="button">Render PNG</button>
+    </div>
+  </div>
+  <div class="stage"><div id="art"></div></div>
+</main>
+</div>
+<div id="toast" class="toast" hidden></div>
+<div id="modal" class="modal" hidden><div class="card" id="modalCard"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
+<script type="application/json" id="sea">__DATA__</script>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const RAW=JSON.parse($('#sea').textContent);
+const FEATS=RAW.provinces.map(p=>({type:'Feature',properties:{name:p.n,c:p.c,t:p.t},geometry:{type:'MultiPolygon',coordinates:p.g}}));
+const COUNTRIES=Object.entries(RAW.countries).sort((a,b)=>a[1].localeCompare(b[1]));
+
+// Palettes built from the Pluto token file, plus one matched to the reference board.
+const PALETTES=[
+  {id:'field',name:'Field',paper:'#F5F4EF',land:'#A9C79A',ink:'#2F4A2C',chip:'#E0F7A1'},
+  {id:'plutonium',name:'Plutonium',paper:'#E5EBFF',land:'#99ADFF',ink:'#001E99',chip:'#FFFFFF'},
+  {id:'cryo',name:'Cryogenic',paper:'#072C2C',land:'#106F6E',ink:'#63E8E6',chip:'#99FFF5'},
+  {id:'starlight',name:'Starlight',paper:'#FFFAE5',land:'#FFD833',ink:'#1A1500',chip:'#FFFFFF'},
+  {id:'scarlet',name:'Scarlet',paper:'#FF5500',land:'#FF9966',ink:'#1A0900',chip:'#FFEEE5'},
+  {id:'cyber',name:'Cyber night',paper:'#17191C',land:'#2B3035',ink:'#C1EF43',chip:'#C1EF43'},
+  {id:'violet',name:'Ultraviolet',paper:'#F2F0FF',land:'#BCB3FF',ink:'#261E66',chip:'#FFFFFF'}
+];
+const RATIOS={'1:1':[1600,1600],'4:5':[1600,2000],'16:9':[1920,1080],'3:4':[1500,2000]};
+
+const S={country:'VNM',province:null,style:'atlas',ratio:'1:1',pal:{...PALETTES[0]},palId:'field',
+  res:220,levels:22,smooth:1,exag:2,gap:14,pad:10,
+  o:{outline:true,neighbors:true,pin:true,coords:true,scale:true,grid:false,grain:true,transparent:false},
+  pinText:'',dem:null,demName:'',autoDem:true,l:{city:false,veg:false,water:false},cover:null,
+  view:{k:1,c:null},topo:{lo:'#A9C79A',hi:'#2F4A2C'},veg:{mode:'heat',lo:'#E4EFC4',hi:'#2E6B34'},water:'#7FB2D9',photoSrc:'esri',photo:null};
+
+function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
+
+// ---------- region selects ----------
+const cSel=$('#country'),pSel=$('#province');
+COUNTRIES.forEach(([k,v])=>cSel.add(new Option(v,k)));
+function fillProvinces(){
+  pSel.innerHTML='';
+  pSel.add(new Option('Whole country','__all'));
+  FEATS.filter(f=>f.properties.c===S.country).sort((a,b)=>a.properties.name.localeCompare(b.properties.name))
+    .forEach(f=>pSel.add(new Option(f.properties.name,f.properties.name)));
+}
+cSel.value=S.country;fillProvinces();
+S.province='Lâm Đồng';pSel.value=S.province;
+cSel.onchange=()=>{S.custom=null;S.view={k:1,c:null};$('#clearBox').hidden=true;S.country=cSel.value;fillProvinces();S.province='__all';pSel.value='__all';$('#pinText').value='';S.pinText='';render()};
+pSel.onchange=()=>{S.custom=null;S.view={k:1,c:null};$('#clearBox').hidden=true;S.province=pSel.value;$('#pinText').value='';S.pinText='';render()};
+
+// ---------- controls ----------
+document.querySelectorAll('#style button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#style button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  S.style=b.dataset.v;render();});
+$('#ratio').onchange=e=>{S.ratio=e.target.value;render()};
+const sw=$('#swatches');
+PALETTES.forEach(p=>{const b=document.createElement('button');b.className='sw';b.title=p.name;b.setAttribute('aria-label',p.name+' palette');
+  b.style.background=p.paper;b.innerHTML=`<i style="background:${p.land}"></i><b style="background:${p.ink}"></b>`;
+  b.setAttribute('aria-pressed',p.id===S.palId);
+  b.onclick=()=>{S.pal={...p};S.palId=p.id;syncColors();sw.querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b));render()};
+  sw.appendChild(b)});
+function syncColors(){$('#cPaper').value=S.pal.paper;$('#cLand').value=S.pal.land;$('#cInk').value=S.pal.ink;$('#cChip').value=S.pal.chip}
+syncColors();
+[['#cPaper','paper'],['#cLand','land'],['#cInk','ink'],['#cChip','chip']].forEach(([id,k])=>$(id).oninput=e=>{S.pal[k]=e.target.value;debounced()});
+['res','levels','smooth','exag','gap','pad'].forEach(k=>{const el=$('#'+k),out=el.nextElementSibling;
+  const show=()=>out.textContent=el.value;show();el.oninput=()=>{S[k]=+el.value;show();debounced()}});
+[['oOutline','outline'],['oNeighbors','neighbors'],['oPin','pin'],['oCoords','coords'],['oScale','scale'],['oGrid','grid'],['oGrain','grain'],['oTransparent','transparent']]
+  .forEach(([id,k])=>$('#'+id).onchange=e=>{S.o[k]=e.target.checked;render()});
+$('#pinText').oninput=e=>{S.pinText=e.target.value;debounced()};
+const key=$('#apikey');key.value=load('ot_key')||'';key.oninput=()=>{store('ot_key',key.value.trim());updateDl()};
+$('#autoDem').onchange=e=>{S.autoDem=e.target.checked;render()};
+[['lCity','city'],['lVeg','veg'],['lWater','water']].forEach(([id,k])=>$('#'+id).onchange=e=>{S.l[k]=e.target.checked;render()});
+[['tLo',v=>S.topo.lo=v],['tHi',v=>S.topo.hi=v],['vLo',v=>S.veg.lo=v],['vHi',v=>S.veg.hi=v],['cWater',v=>S.water=v]].forEach(([id,f])=>$('#'+id).oninput=e=>{f(e.target.value);debounced()});
+$('#vegMode').onchange=e=>{S.veg.mode=e.target.value;render()};
+$('#photoSrc').onchange=e=>{S.photoSrc=e.target.value;render()};
+
+// ---------- pan, zoom, lasso ----------
+const NS='http://www.w3.org/2000/svg',drawBtn=$('#drawBox'),art=$('#art');let drag=null;
+const lassoOn=()=>drawBtn.getAttribute('aria-pressed')==='true';
+drawBtn.onclick=()=>drawBtn.setAttribute('aria-pressed',!lassoOn());
+$('#clearBox').onclick=()=>{S.custom=null;S.view={k:1,c:null};$('#clearBox').hidden=true;render()};
+function projFor(feat){
+  const[W,H]=RATIOS[S.ratio],pad=Math.min(W,H)*S.pad/100;
+  const p=d3.geoMercator().fitExtent([[pad,pad],[W-pad,H-pad]],feat);
+  if(S.view.k!==1||S.view.c){const c=S.view.c||p.invert([W/2,H/2]);p.scale(p.scale()*S.view.k);const q=p(c),t=p.translate();p.translate([t[0]+W/2-q[0],t[1]+H/2-q[1]])}
+  return p;
+}
+function zoomAt(pt,f){
+  const[W,H]=RATIOS[S.ratio],k=Math.max(.25,Math.min(512,S.view.k*f));f=k/S.view.k;
+  S.view={k,c:S.proj.invert([pt[0]+(W/2-pt[0])/f,pt[1]+(H/2-pt[1])/f])};S.proj=projFor(currentFeature());debounced();
+}
+const svgPt=e=>{const r=art.querySelector('svg').getBoundingClientRect();return[(e.clientX-r.left)*S.W/r.width,(e.clientY-r.top)*S.H/r.height]};
+$('#zIn').onclick=()=>zoomAt([S.W/2,S.H/2],1.6);
+$('#zOut').onclick=()=>zoomAt([S.W/2,S.H/2],1/1.6);
+$('#zFit').onclick=()=>{S.view={k:1,c:null};render()};
+art.addEventListener('wheel',e=>{if(!art.querySelector('svg'))return;e.preventDefault();zoomAt(svgPt(e),Math.exp(-e.deltaY*.0015))},{passive:false});
+art.addEventListener('pointerdown',e=>{const svg=art.querySelector('svg');if(!svg||e.button>0)return;
+  e.preventDefault();art.setPointerCapture(e.pointerId);
+  if(lassoOn()){const el=document.createElementNS(NS,'path');
+    [['fill',S.pal.chip],['fill-opacity','.35'],['stroke',S.pal.ink],['stroke-width','3'],['stroke-dasharray','12 8']].forEach(([k,v])=>el.setAttribute(k,v));
+    svg.appendChild(el);drag={lasso:true,pts:[svgPt(e)],el}}
+  else{drag={sx:e.clientX,sy:e.clientY,svg};art.style.cursor='grabbing'}});
+art.addEventListener('pointermove',e=>{if(!drag)return;
+  if(drag.lasso){const p=svgPt(e),q=drag.pts[drag.pts.length-1];if(Math.hypot(p[0]-q[0],p[1]-q[1])<4)return;
+    drag.pts.push(p);drag.el.setAttribute('d','M'+drag.pts.map(p=>f2(p[0])+' '+f2(p[1])).join('L')+'Z')}
+  else drag.svg.style.transform=`translate(${e.clientX-drag.sx}px,${e.clientY-drag.sy}px)`});
+art.addEventListener('pointerup',e=>{if(!drag)return;const d=drag;drag=null;art.style.cursor='';
+  if(d.lasso){
+    if(d.pts.length<3){render();return}
+    const ring=d.pts.map(p=>S.proj.invert(p));ring.push(ring[0]);
+    if(d3.geoArea({type:'Polygon',coordinates:[ring]})>2*Math.PI)ring.reverse(); // d3 wants clockwise exterior rings
+    const bb=d3.geoBounds({type:'Polygon',coordinates:[ring]});
+    S.custom={ring,w:bb[0][0],s:bb[0][1],e:bb[1][0],n:bb[1][1]};S.view={k:1,c:null};
+    drawBtn.setAttribute('aria-pressed','false');$('#clearBox').hidden=false;$('#pinText').value='';S.pinText='';render();return}
+  const r=d.svg.getBoundingClientRect(),dx=(e.clientX-d.sx)*S.W/r.width,dy=(e.clientY-d.sy)*S.H/r.height;
+  if(Math.abs(dx)+Math.abs(dy)<3){d.svg.style.transform='';return}
+  S.view={k:S.view.k,c:S.proj.invert([S.W/2-dx,S.H/2-dy])};render()});
+
+let tmr;function debounced(){clearTimeout(tmr);tmr=setTimeout(render,120)}
+
+// ---------- geometry helpers ----------
+function currentFeature(){
+  // d3 wants the exterior ring clockwise: west-south, north, east, south
+  if(S.custom)return{type:'Feature',properties:{name:'Custom area'},geometry:{type:'Polygon',coordinates:[S.custom.ring]}};
+  if(S.province==='__all'||!S.province){
+    return {type:'FeatureCollection',features:FEATS.filter(f=>f.properties.c===S.country)};
+  }
+  return FEATS.find(f=>f.properties.c===S.country&&f.properties.name===S.province);
+}
+function regionName(){if(S.custom)return 'Custom area';return S.province==='__all'?RAW.countries[S.country]:S.province}
+function largestPolyFeature(f){
+  if(f.type==='FeatureCollection'||f.geometry.type==='Polygon')return f;
+  let best=null,ba=-1;
+  for(const poly of f.geometry.coordinates){const g={type:'Polygon',coordinates:poly};const a=d3.geoArea(g);if(a>ba){ba=a;best=g}}
+  return best;
+}
+function bboxOf(f){const b=d3.geoBounds(f);return {w:b[0][0],s:b[0][1],e:b[1][0],n:b[1][1]}}
+
+// ---------- DEM ----------
+function updateDl(){
+  const b=bboxOf(currentFeature());const p=0.08;
+  const area=(b.e-b.w)*(b.n-b.s);
+  const dem=area>40?'SRTM15Plus':'COP90';
+  const k=key.value.trim();
+  const url=`https://portal.opentopography.org/API/globaldem?demtype=${dem}&south=${(b.s-p).toFixed(3)}&north=${(b.n+p).toFixed(3)}&west=${(b.w-p).toFixed(3)}&east=${(b.e+p).toFixed(3)}&outputFormat=GTiff&API_Key=${encodeURIComponent(k||'YOUR_KEY')}`;
+  const a=$('#dlLink');a.href=url;
+  a.setAttribute('aria-disabled',!k);
+  $('#dlInfo').textContent=`${dem==='COP90'?'Copernicus 90 m':'SRTM15+ ~500 m'} · ${(b.s-p).toFixed(2)}–${(b.n+p).toFixed(2)}°N, ${(b.w-p).toFixed(2)}–${(b.e+p).toFixed(2)}°E${k?'':' · add your key first'}`;
+}
+$('#dlLink').addEventListener('click',e=>{if(!key.value.trim()){e.preventDefault();toast('Paste your OpenTopography API key first')}});
+$('#demFile').onchange=async e=>{
+  const file=e.target.files[0];if(!file)return;
+  toast('Reading '+file.name+'…');
+  try{
+    const tiff=await GeoTIFF.fromArrayBuffer(await file.arrayBuffer());
+    const img=await tiff.getImage();
+    const bb=img.getBoundingBox();const w=img.getWidth(),h=img.getHeight();
+    if(Math.abs(bb[0])>360||Math.abs(bb[3])>90)throw new Error('This file is not in latitude/longitude (EPSG:4326). Download it with the link above.');
+    const r=await img.readRasters({interleave:false});
+    const nd=img.getGDALNoData();
+    S.dem={w,h,bb,data:r[0],nodata:nd==null?null:+nd};S.demName=file.name;
+    toast('Elevation loaded');render();
+  }catch(err){toast(err.message||'Could not read that GeoTIFF');console.error(err)}
+  e.target.value='';
+};
+function demCovers(b){const d=S.dem;if(!d)return false;return b.w>=d.bb[0]-0.05&&b.e<=d.bb[2]+0.05&&b.s>=d.bb[1]-0.05&&b.n<=d.bb[3]+0.05}
+function demSample(lon,lat){
+  const d=S.dem;let x,y;
+  if(d.merc){x=(lon2x(lon,d.merc.z)-d.merc.x0)*256-.5;y=(lat2y(lat,d.merc.z)-d.merc.y0)*256-.5}
+  else{x=(lon-d.bb[0])/(d.bb[2]-d.bb[0])*d.w-.5;y=(d.bb[3]-lat)/(d.bb[3]-d.bb[1])*d.h-.5}
+  if(x<0||y<0||x>d.w-1||y>d.h-1)return NaN;
+  const x0=x|0,y0=y|0,x1=Math.min(x0+1,d.w-1),y1=Math.min(y0+1,d.h-1),fx=x-x0,fy=y-y0;
+  const g=(i,j)=>{const v=d.data[j*d.w+i];return(d.nodata!=null&&v===d.nodata)||v<-1000?NaN:v};
+  const a=g(x0,y0),b=g(x1,y0),c=g(x0,y1),e=g(x1,y1);
+  if([a,b,c,e].some(Number.isNaN)){const v=[a,b,c,e].filter(v=>!Number.isNaN(v));return v.length?d3.mean(v):NaN}
+  return (a*(1-fx)+b*fx)*(1-fy)+(c*(1-fx)+e*fx)*fy;
+}
+
+// ---------- AWS Terrarium (web mercator PNG tiles, height = R*256 + G + B/256 - 32768) ----------
+const lon2x=(lon,z)=>(lon+180)/360*2**z;
+const lat2y=(lat,z)=>{const r=lat*Math.PI/180;return(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*2**z};
+const x2lon=(x,z)=>x/2**z*360-180;
+const y2lat=(y,z)=>Math.atan(Math.sinh(Math.PI*(1-2*y/2**z)))*180/Math.PI;
+const tileSpan=(b,z)=>[Math.floor(lon2x(b.w,z)),Math.floor(lon2x(b.e,z)),Math.floor(lat2y(b.n,z)),Math.floor(lat2y(b.s,z))];
+// highest zoom whose tile count over b stays within limit
+function pickZoom(b,max,limit){let z=max;for(;z>2;z--){const[x0,x1,y0,y1]=tileSpan(b,z);if((x1-x0+1)*(y1-y0+1)<=limit)break}return z}
+async function fetchTerrarium(b){
+  const z=pickZoom(b,13,48),[x0,x1,y0,y1]=tileSpan(b,z),w=(x1-x0+1)*256,h=(y1-y0+1)*256;
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;const ctx=cv.getContext('2d',{willReadFrequently:true});
+  const jobs=[];
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)jobs.push(
+    fetch(`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`)
+      .then(r=>{if(!r.ok)throw new Error('Elevation tile '+r.status);return r.blob()})
+      .then(bl=>createImageBitmap(bl,{colorSpaceConversion:'none',premultiplyAlpha:'none'}))
+      .then(im=>ctx.drawImage(im,(x-x0)*256,(y-y0)*256)));
+  await Promise.all(jobs);
+  const px=ctx.getImageData(0,0,w,h).data,data=new Float32Array(w*h);
+  for(let i=0;i<w*h;i++)data[i]=px[i*4]*256+px[i*4+1]+px[i*4+2]/256-32768;
+  return {w,h,data,nodata:null,merc:{z,x0,y0},bb:[x2lon(x0,z),y2lat(y1+1,z),x2lon(x1+1,z),y2lat(y0,z)],name:`AWS Terrarium z${z}`};
+}
+let demJob=null;
+function ensureDem(b){
+  const key=[b.w,b.s,b.e,b.n].join();if(demJob===key)return;demJob=key;
+  $('#demStatus').className='status';$('#demStatus').innerHTML='<b>Fetching elevation…</b>';
+  fetchTerrarium(b).then(d=>{if(demJob!==key)return;S.dem=d;S.demName=d.name;render()})
+    .catch(err=>{console.error(err);toast('Elevation fetch failed: '+err.message+'. Using stylized relief.')});
+}
+
+// ---------- photo basemaps (web mercator tiles, read through serve.py) ----------
+const PHOTO={
+  esri:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',max:18,credit:'IMAGERY ESRI, MAXAR, EARTHSTAR GEOGRAPHICS'},
+  s2:{url:'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg',max:14,credit:'SENTINEL-2 CLOUDLESS 2016 BY EOX · CC BY 4.0'},
+  osm:{url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',max:19,credit:'© OPENSTREETMAP CONTRIBUTORS'},
+  topo:{url:'https://a.tile.opentopomap.org/{z}/{x}/{y}.png',max:17,credit:'© OPENTOPOMAP (CC-BY-SA) · © OPENSTREETMAP CONTRIBUTORS'}};
+async function fetchPhoto(b,src){
+  const T=PHOTO[src],z=pickZoom(b,T.max,36),[x0,x1,y0,y1]=tileSpan(b,z);
+  const cv=document.createElement('canvas');cv.width=(x1-x0+1)*256;cv.height=(y1-y0+1)*256;const ctx=cv.getContext('2d');let ok=0;
+  const jobs=[];
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)jobs.push(
+    fetch(proxied(T.url.replace('{z}',z).replace('{x}',x).replace('{y}',y)))
+      .then(r=>{if(!r.ok)throw new Error('tile '+r.status);return r.blob()}).then(createImageBitmap)
+      .then(im=>{ctx.drawImage(im,(x-x0)*256,(y-y0)*256,256,256);ok++}).catch(()=>{}));
+  await Promise.all(jobs);
+  if(!ok)throw new Error('no imagery tiles loaded');
+  return {src,z,b,url:cv.toDataURL('image/jpeg',.88),bb:[x2lon(x0,z),y2lat(y0,z),x2lon(x1+1,z),y2lat(y1+1,z)]};
+}
+let photoJob=null;
+function ensurePhoto(b){
+  const key=S.photoSrc+[b.w,b.s,b.e,b.n].join();if(photoJob===key)return;photoJob=key;toast('Loading imagery…');
+  fetchPhoto(b,S.photoSrc).then(p=>{if(photoJob!==key)return;S.photo=p;render()})
+    .catch(err=>{console.error(err);toast('Imagery failed. Run python3 serve.py and open the localhost page.')});
+}
+
+// ---------- ESA WorldCover 2021 (3x3 degree COGs on S3; read through serve.py since the bucket sends no CORS headers) ----------
+const WC='https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/';
+const proxied=u=>'/proxy?u='+encodeURIComponent(u);
+// class -> plant density weight (a land cover proxy, not NDVI)
+const VEG={10:1,95:1,20:.6,90:.5,30:.35,40:.35,100:.2};
+async function fetchCover(b){
+  const nx=1400,ny=Math.max(1,Math.round(nx*(b.n-b.s)/((b.e-b.w)*Math.cos((b.n+b.s)/2*Math.PI/180))));
+  const out=new Uint8Array(nx*ny);const pad=(v,n)=>String(Math.abs(v)).padStart(n,'0');
+  const tiles=[];for(let la=Math.floor(b.s/3)*3;la<b.n;la+=3)for(let lo=Math.floor(b.w/3)*3;lo<b.e;lo+=3)tiles.push([la,lo]);
+  let ok=0,lastErr;
+  await Promise.all(tiles.map(async([la,lo])=>{
+    const w=Math.max(b.w,lo),e=Math.min(b.e,lo+3),s=Math.max(b.s,la),n=Math.min(b.n,la+3);
+    const i0=Math.round((w-b.w)/(b.e-b.w)*nx),i1=Math.round((e-b.w)/(b.e-b.w)*nx),j0=Math.round((b.n-n)/(b.n-b.s)*ny),j1=Math.round((b.n-s)/(b.n-b.s)*ny);
+    if(i1<=i0||j1<=j0)return;
+    const name=`ESA_WorldCover_10m_2021_v200_${la<0?'S':'N'}${pad(la,2)}${lo<0?'W':'E'}${pad(lo,3)}_Map.tif`;
+    // shortcut: open-ocean tiles do not exist and fail like any other error; all tiles failing is reported below
+    try{const t=await GeoTIFF.fromUrl(proxied(WC+name));
+      const r=(await t.readRasters({bbox:[w,s,e,n],width:i1-i0,height:j1-j0,resampleMethod:'nearest'}))[0];
+      for(let j=0;j<j1-j0;j++)out.set(r.subarray(j*(i1-i0),(j+1)*(i1-i0)),(j0+j)*nx+i0);ok++}
+    catch(err){lastErr=err}
+  }));
+  if(!ok)throw lastErr||new Error('no land cover tiles');
+  return {b,nx,ny,data:out};
+}
+let coverJob=null;
+function ensureCover(b){
+  const key=[b.w,b.s,b.e,b.n].join();if(coverJob===key)return;coverJob=key;
+  $('#lcStatus').textContent='Fetching land cover…';
+  fetchCover(b).then(c=>{if(coverJob!==key)return;S.cover=c;$('#lcStatus').textContent='ESA WorldCover 2021, 10 m.';render()})
+    .catch(err=>{console.error(err);$('#lcStatus').innerHTML='Land cover failed. It needs the local server: <code>python3 serve.py</code>';coverJob=null;
+      ['lCity','lVeg','lWater'].forEach(id=>$('#'+id).checked=false);S.l={city:false,veg:false,water:false}});
+}
+function coverAt(lon,lat){const c=S.cover,b=c.b;const i=Math.floor((lon-b.w)/(b.e-b.w)*c.nx),j=Math.floor((b.n-lat)/(b.n-b.s)*c.ny);
+  return i<0||j<0||i>=c.nx||j>=c.ny?0:c.data[j*c.nx+i]}
+// land cover layers on a screen grid: water + city as filled contours, plants as a density stipple
+function coverLayers(proj,W,H){
+  const nx=Math.min(900,S.res*3),cs=W/nx,ny=Math.round(H/cs),N=nx*ny;
+  const water=new Float64Array(N),city=new Float64Array(N),veg=new Float32Array(N),all=new Uint8Array(N).fill(1);
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const ll=proj.invert([(i+.5)*cs,(j+.5)*cs]),v=coverAt(ll[0],ll[1]),k=j*nx+i;
+    water[k]=v===80?1:0;city[k]=v===50?1:0;veg[k]=VEG[v]||0}
+  const gp=d3.geoPath(d3.geoTransform({point(x,y){this.stream.point(f2(x*cs),f2(y*cs))}}));
+  const blob=a=>gp(d3.contours().size([nx,ny]).thresholds([.5])(a)[0]);
+  const out=[];
+  const ramp=(t,n)=>d3.interpolateLab(S.veg.lo,S.veg.hi)(t);
+  if(S.l.veg){for(let p=0;p<3;p++)blur(veg,all,nx,ny);
+    if(S.veg.mode==='heat'){const L=lutOf(S.veg.lo,S.veg.hi);
+      out.push(`<g id="plants"><image href="${rasterURL(nx,ny,k=>veg[k]<.06?null:L[Math.min(255,veg[k]*255|0)])}" width="${nx*cs}" height="${ny*cs}" preserveAspectRatio="none"/></g>`)}
+    else if(S.veg.mode==='bands'){const ths=[.12,.3,.5,.7,.88];
+      out.push(`<g id="plants">${d3.contours().size([nx,ny]).thresholds(ths)(Float64Array.from(veg)).map((c,i)=>`<path d="${gp(c)}" fill="${ramp(i/(ths.length-1))}"/>`).join('')}</g>`)}
+    else{const gap=S.gap*.8,maxR=gap*.42;let d='';
+      for(let y=gap/2,row=0;y<H;y+=gap*.866,row++)for(let x=(row%2?gap:gap/2);x<W;x+=gap){
+        const t=veg[Math.min(ny-1,y/cs|0)*nx+Math.min(nx-1,x/cs|0)];if(t<.08)continue;const r=maxR*Math.sqrt(t);
+        d+=`M${f2(x-r)} ${f2(y)}a${f2(r)} ${f2(r)} 0 1 0 ${f2(2*r)} 0a${f2(r)} ${f2(r)} 0 1 0 ${f2(-2*r)} 0`}
+      out.push(`<g id="plants"><path d="${d}" fill="${S.veg.hi}"/></g>`)}}
+  if(S.l.water){
+    // fill, darker shoreline, then lighter ripple lines at fixed distances from shore
+    const wm=Uint8Array.from(water),D=Float64Array.from(chamfer(wm,nx,ny),v=>v>1e8?0:v),wc=d3.color(S.water);
+    const rip=d3.contours().size([nx,ny]).thresholds([6,14,26].map(px=>px/cs))(D);
+    out.push(`<g id="water"><path d="${blob(water)}" fill="${S.water}" stroke="${wc.darker(1)}" stroke-width="1.4" stroke-linejoin="round"/>${rip.map((c,i)=>`<path d="${gp(c)}" fill="none" stroke="${wc.brighter(.9)}" stroke-opacity="${.75-i*.2}" stroke-width="1"/>`).join('')}</g>`)}
+  if(S.l.city)out.push(`<g id="cities"><path d="${blob(city)}" fill="${S.pal.ink}" fill-opacity=".8"/></g>`);
+  return out.join('');
+}
+
+// 256-step Lab ramp as [r,g,b] triples
+function lutOf(a,b){const f=d3.interpolateLab(a,b);return d3.range(256).map(i=>{const c=d3.rgb(f(i/255));return[c.r,c.g,c.b]})}
+// raster field -> PNG data URL; fn(k) returns [r,g,b] or null for transparent
+function rasterURL(nx,ny,fn){const c=document.createElement('canvas');c.width=nx;c.height=ny;const x=c.getContext('2d'),im=x.createImageData(nx,ny);
+  for(let k=0;k<nx*ny;k++){const v=fn(k);if(!v)continue;im.data[k*4]=v[0];im.data[k*4+1]=v[1];im.data[k*4+2]=v[2];im.data[k*4+3]=255}
+  x.putImageData(im,0,0);return c.toDataURL()}
+// chamfer distance (in cells) from each masked cell to the nearest unmasked cell
+function chamfer(mask,nx,ny){const N=nx*ny,D=new Float32Array(N),INF=1e9;
+  for(let k=0;k<N;k++)D[k]=mask[k]?INF:0;
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const k=j*nx+i;if(!D[k])continue;let m=D[k];
+    if(i>0)m=Math.min(m,D[k-1]+1);if(j>0)m=Math.min(m,D[k-nx]+1);if(i>0&&j>0)m=Math.min(m,D[k-nx-1]+1.414);if(i<nx-1&&j>0)m=Math.min(m,D[k-nx+1]+1.414);D[k]=m}
+  for(let j=ny-1;j>=0;j--)for(let i=nx-1;i>=0;i--){const k=j*nx+i;if(!D[k])continue;let m=D[k];
+    if(i<nx-1)m=Math.min(m,D[k+1]+1);if(j<ny-1)m=Math.min(m,D[k+nx]+1);if(i<nx-1&&j<ny-1)m=Math.min(m,D[k+nx+1]+1.414);if(i>0&&j<ny-1)m=Math.min(m,D[k+nx-1]+1.414);D[k]=m}
+  return D}
+
+// seeded value noise for the stylized fallback
+function hash(x,y,s){let h=(x*374761393+y*668265263+s*1442695041)|0;h=(h^(h>>>13))*1274126177|0;return((h^(h>>>16))>>>0)/4294967295}
+function vnoise(x,y,s){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=hash(xi,yi,s),b=hash(xi+1,yi,s),c=hash(xi,yi+1,s),d=hash(xi+1,yi+1,s);return(a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v}
+function fbm(x,y,s){let t=0,a=.5,f=1;for(let o=0;o<5;o++){t+=a*vnoise(x*f,y*f,s+o);f*=2.03;a*=.5}return t}
+
+// ---------- grid ----------
+function buildGrid(proj,feat,W,H,b){
+  const nx=S.res,cs=W/nx,ny=Math.round(H/cs);
+  const cv=document.createElement('canvas');cv.width=nx;cv.height=ny;
+  const ctx=cv.getContext('2d',{willReadFrequently:true});
+  ctx.setTransform(1/cs,0,0,1/cs,0,0);ctx.beginPath();d3.geoPath(proj,ctx)(feat);ctx.fillStyle='#000';ctx.fill();
+  const al=ctx.getImageData(0,0,nx,ny).data;
+  const N=nx*ny,mask=new Uint8Array(N),val=new Float32Array(N);
+  for(let i=0;i<N;i++)mask[i]=al[i*4+3]>110?1:0;
+  const real=demCovers(b);
+  if(real){
+    for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const k=j*nx+i;if(!mask[k])continue;
+      let s=0,c=0;for(const[ox,oy]of[[.25,.25],[.75,.25],[.25,.75],[.75,.75]]){const ll=proj.invert([(i+ox)*cs,(j+oy)*cs]);const v=demSample(ll[0],ll[1]);if(!Number.isNaN(v)){s+=v;c++}}
+      val[k]=c?s/c:0;}
+  }else{
+    // chamfer distance from the edge, shaped with noise: stylized, not measured
+    const D=chamfer(mask,nx,ny),INF=1e9;
+    let mx=0;for(let k=0;k<N;k++)if(D[k]>mx&&D[k]<INF)mx=D[k];
+    const seed=[...regionName()].reduce((a,c)=>a*31+c.charCodeAt(0)|0,7);
+    for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const k=j*nx+i;if(!mask[k])continue;
+      const d=Math.min(D[k]/mx,1),n=fbm(i/nx*6,j/ny*6,seed),r=1-Math.abs(fbm(i/nx*3+9,j/ny*3+3,seed+5)*2-1);
+      val[k]=1500*(Math.pow(d,.75)*.55+n*.3*Math.pow(d,.35)+r*r*.35*Math.pow(d,.5));}
+  }
+  for(let p=0;p<S.smooth;p++)blur(val,mask,nx,ny);
+  let lo=Infinity,hi=-Infinity;for(let k=0;k<N;k++)if(mask[k]){if(val[k]<lo)lo=val[k];if(val[k]>hi)hi=val[k]}
+  if(!isFinite(lo)){lo=0;hi=1}
+  return {nx,ny,cs,mask,val,lo,hi,real};
+}
+function blur(v,m,nx,ny){const t=new Float32Array(v);
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const k=j*nx+i;if(!m[k])continue;let s=0,c=0;
+    for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){const ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=nx||jj>=ny)continue;const kk=jj*nx+ii;if(!m[kk])continue;const w=(di||dj)?((di&&dj)?1:2):4;s+=t[kk]*w;c+=w}
+    v[k]=s/c}}
+function hillshade(G,mpp){
+  const {nx,ny,val,mask}=G,out=new Float32Array(nx*ny);const cell=G.cs*mpp;
+  const z=G.real?S.exag:S.exag*(G.cs*mpp*nx/6000);
+  const az=315*Math.PI/180,alt=45*Math.PI/180;
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const k=j*nx+i;if(!mask[k])continue;
+    const g=(ii,jj)=>{ii=Math.max(0,Math.min(nx-1,ii));jj=Math.max(0,Math.min(ny-1,jj));const kk=jj*nx+ii;return mask[kk]?val[kk]:val[k]};
+    const dx=(g(i+1,j)-g(i-1,j))/(2*cell)*z,dy=(g(i,j+1)-g(i,j-1))/(2*cell)*z;
+    const slope=Math.atan(Math.hypot(dx,dy)),aspect=Math.atan2(dy,-dx);
+    out[k]=Math.max(0,Math.cos(alt)*Math.cos(slope)+Math.sin(alt)*Math.sin(slope)*Math.cos(az-Math.PI/2-aspect));}
+  return out;}
+function niceStep(range,n){const raw=range/n,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p;return (f<1.5?1:f<3?2:f<7?5:10)*p}
+
+// ---------- render ----------
+const f2=n=>Math.round(n*100)/100;
+function render(){
+  updateDl();
+  const [W,H]=RATIOS[S.ratio];const P=S.pal;const feat=currentFeature();if(!feat)return;
+  const proj=projFor(feat);
+  const path=d3.geoPath(proj);S.proj=proj;
+  // data bbox = feature bbox clipped to what is on screen, so zooming in fetches finer data
+  const fb0=bboxOf(feat),v0=proj.invert([0,0]),v1=proj.invert([W,H]);
+  let fb={w:Math.max(fb0.w,v0[0]),e:Math.min(fb0.e,v1[0]),n:Math.min(fb0.n,v0[1]),s:Math.max(fb0.s,v1[1])};
+  if(!(fb.w<fb.e&&fb.s<fb.n))fb=fb0;
+  const fbp={w:fb.w-.02,s:fb.s-.02,e:fb.e+.02,n:fb.n+.02};
+  if(S.autoDem&&(!demCovers(fb)||(S.dem.merc&&S.dem.merc.z<pickZoom(fbp,13,48))))ensureDem(fbp);
+  const wantCover=S.l.city||S.l.veg||S.l.water,C=S.cover;
+  const haveCover=C&&C.b.w<=fb.w&&C.b.e>=fb.e&&C.b.s<=fb.s&&C.b.n>=fb.n;
+  if(wantCover&&(!haveCover||(C.b.e-C.b.w)/C.nx>2*(fb.e-fb.w)/1400))ensureCover(fb);
+  const PH=S.photo,havePhoto=S.style==='photo'&&PH&&PH.src===S.photoSrc&&PH.b.w<=fb.w&&PH.b.e>=fb.e&&PH.b.s<=fb.s&&PH.b.n>=fb.n;
+  if(S.style==='photo'&&(!havePhoto||PH.z<pickZoom(fb,PHOTO[S.photoSrc].max,36)))ensurePhoto(fb);
+  const G=buildGrid(proj,feat,W,H,fb);
+  const mid=proj.invert([W/2,H/2]),mpp=d3.geoDistance(mid,proj.invert([W/2+1,H/2]))*6371000;
+  const step=niceStep(G.hi-G.lo,S.levels);
+  const ths=d3.range(Math.ceil((G.lo+step*.5)/step)*step,G.hi,step);
+  const grid=Float64Array.from(G.val,(v,k)=>G.mask[k]?v:G.lo-step);
+  const cont=d3.contours().size([G.nx,G.ny]).thresholds(ths)(grid);
+  const gp=d3.geoPath(d3.geoTransform({point(x,y){this.stream.point(f2(x*G.cs),f2(y*G.cs))}}));
+  const focus=path(feat);
+  const out=[];
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Schibsted Grotesk, Helvetica, Arial, sans-serif">`);
+  out.push(`<defs><clipPath id="clip"><path d="${focus}"/></clipPath>
+    <pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="0.9" fill="${P.ink}" fill-opacity=".14"/></pattern>
+    <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0"/><feComposite in2="SourceGraphic" operator="in"/></filter></defs>`);
+  if(!S.o.transparent)out.push(`<rect width="${W}" height="${H}" fill="${P.paper}"/>`);
+  if(S.o.grid){const gs=Math.round(Math.min(W,H)/16);let d='';for(let x=gs;x<W;x+=gs)d+=`M${x} 0V${H}`;for(let y=gs;y<H;y+=gs)d+=`M0 ${y}H${W}`;out.push(`<path d="${d}" stroke="${P.ink}" stroke-opacity=".12" stroke-width="1" fill="none"/>`)}
+  if(S.o.neighbors){
+    const others=FEATS.filter(f=>f!==feat&&!(feat.type==='FeatureCollection'&&feat.features.includes(f)));
+    const view=d3.geoPath(proj);let d='';
+    const vb=[proj.invert([0,0]),proj.invert([W,H])];
+    for(const f of others){const b=d3.geoBounds(f);if(b[1][0]<vb[0][0]||b[0][0]>vb[1][0]||b[1][1]<vb[1][1]||b[0][1]>vb[0][1])continue;d+=view(f)||''}
+    if(d)out.push(`<path d="${d}" fill="${['contour','halftone','ridges','outline'].includes(S.style)?'none':P.land}" fill-opacity=".32" stroke="${P.ink}" stroke-opacity=".28" stroke-width="1"/>`);
+  }
+  const lineD=(i)=>gp(cont[i]);
+  if(S.style==='atlas'){
+    out.push(`<path d="${focus}" fill="${P.land}"/>`);
+    out.push(`<g clip-path="url(#clip)"><rect width="${W}" height="${H}" fill="url(#dots)"/>`);
+    cont.forEach((c,i)=>{const idx=Math.round(ths[i]/step)%5===0;out.push(`<path d="${lineD(i)}" fill="none" stroke="${P.ink}" stroke-opacity="${idx?.6:.32}" stroke-width="${idx?1.6:.8}" stroke-linejoin="round"/>`)});
+    out.push(`</g>`);
+  }else if(S.style==='contour'){
+    out.push(`<g clip-path="url(#clip)">`);
+    cont.forEach((c,i)=>{const idx=Math.round(ths[i]/step)%5===0;out.push(`<path d="${lineD(i)}" fill="none" stroke="${P.ink}" stroke-width="${idx?2.2:1}" stroke-linejoin="round"/>`)});
+    out.push(`</g>`);
+  }else if(S.style==='heat'){
+    const sh=hillshade(G,mpp),L=lutOf(S.topo.lo,S.topo.hi),rg=G.hi-G.lo||1;
+    const url=rasterURL(G.nx,G.ny,k=>{if(!G.mask[k])return null;const c=L[Math.max(0,Math.min(255,(G.val[k]-G.lo)/rg*255|0))],m=.7+.3*sh[k];return[c[0]*m,c[1]*m,c[2]*m]});
+    out.push(`<g clip-path="url(#clip)"><image href="${url}" width="${G.nx*G.cs}" height="${G.ny*G.cs}" preserveAspectRatio="none"/>`);
+    cont.forEach((c,i)=>{if(Math.round(ths[i]/step)%5===0)out.push(`<path d="${lineD(i)}" fill="none" stroke="${P.ink}" stroke-opacity=".3" stroke-width="1" stroke-linejoin="round"/>`)});
+    out.push(`</g>`);
+  }else if(S.style==='outline'){
+    // outline only: the boundary is drawn below with the outline overlay
+  }else if(S.style==='photo'){
+    out.push(`<path d="${focus}" fill="${P.land}"/>`);
+    if(havePhoto){const a=proj([PH.bb[0],PH.bb[1]]),c=proj([PH.bb[2],PH.bb[3]]);
+      out.push(`<g clip-path="url(#clip)"><image href="${PH.url}" x="${f2(a[0])}" y="${f2(a[1])}" width="${f2(c[0]-a[0])}" height="${f2(c[1]-a[1])}" preserveAspectRatio="none"/></g>`)}
+  }else if(S.style==='bands'){
+    const ramp=d3.interpolateLab(S.topo.lo,S.topo.hi);
+    out.push(`<path d="${focus}" fill="${S.topo.lo}"/><g clip-path="url(#clip)">`);
+    cont.forEach((c,i)=>out.push(`<path d="${lineD(i)}" fill="${ramp(Math.pow((i+1)/(cont.length+1),.9))}" stroke="${P.paper}" stroke-opacity=".45" stroke-width=".8"/>`));
+    out.push(`</g>`);
+  }else if(S.style==='halftone'){
+    const sh=hillshade(G,mpp);const gap=S.gap,maxR=gap*.5;let d='';
+    for(let y=gap/2,row=0;y<H;y+=gap*.866,row++)for(let x=(row%2?gap:gap/2);x<W;x+=gap){
+      const i=Math.min(G.nx-1,x/G.cs|0),j=Math.min(G.ny-1,y/G.cs|0),k=j*G.nx+i;if(!G.mask[k])continue;
+      const e=(G.val[k]-G.lo)/(G.hi-G.lo||1);const t=Math.min(1,(1-sh[k])*.85+e*.2);const r=maxR*Math.sqrt(Math.max(.04,t));
+      d+=`M${f2(x-r)} ${f2(y)}a${f2(r)} ${f2(r)} 0 1 0 ${f2(2*r)} 0a${f2(r)} ${f2(r)} 0 1 0 ${f2(-2*r)} 0`;}
+    out.push(`<path d="${focus}" fill="${P.land}" fill-opacity=".35"/><path d="${d}" fill="${P.ink}"/>`);
+  }else if(S.style==='ridges'){
+    const gap=S.gap,amp=gap*S.exag*4;const bg=S.o.transparent?P.land:P.paper;
+    for(let y=gap/2;y<H+amp;y+=gap){const j=Math.min(G.ny-1,Math.floor(y/G.cs));if(y/G.cs>=G.ny)break;
+      let seg=[];const segs=[];
+      for(let i=0;i<G.nx;i++){const k=j*G.nx+i;if(G.mask[k]){const e=(G.val[k]-G.lo)/(G.hi-G.lo||1);seg.push([f2((i+.5)*G.cs),f2(y-e*amp)])}else if(seg.length){segs.push(seg);seg=[]}}
+      if(seg.length)segs.push(seg);
+      for(const s of segs){if(s.length<2)continue;const top='M'+s.map(p=>p.join(' ')).join('L');
+        out.push(`<path d="${top}L${s[s.length-1][0]} ${y}L${s[0][0]} ${y}Z" fill="${bg}"/><path d="${top}" fill="none" stroke="${P.ink}" stroke-width="1.6" stroke-linejoin="round"/>`)}}
+  }
+  if(wantCover&&haveCover)out.push(`<g clip-path="url(#clip)">${coverLayers(proj,W,H)}</g>`);
+  if(S.o.outline||S.style==='outline')out.push(`<path d="${focus}" fill="none" stroke="${P.ink}" stroke-width="${S.style==='ridges'?1:S.style==='outline'?3:2}" stroke-linejoin="round"/>`);
+  if(S.o.grain)out.push(`<rect width="${W}" height="${H}" fill="${P.ink}" filter="url(#grain)" opacity=".16" style="mix-blend-mode:multiply"/>`);
+  const u=Math.min(W,H)/1600;
+  const cen=d3.geoCentroid(largestPolyFeature(feat));let pc=proj(cen);
+  const ctx=document.createElement('canvas').getContext('2d');
+  if(S.o.pin){
+    const txt=(S.pinText||regionName());const fs=30*u;ctx.font=`500 ${fs}px Schibsted Grotesk, Helvetica, Arial`;
+    const tw=ctx.measureText(txt).width;const h=58*u,w=tw+h*1.35,x=Math.max(16,Math.min(W-w-16,pc[0]-w/2)),y=Math.max(16,pc[1]-h-70*u);
+    out.push(`<g><line x1="${pc[0]}" y1="${y+h}" x2="${pc[0]}" y2="${pc[1]}" stroke="${P.ink}" stroke-width="${2*u}"/><circle cx="${pc[0]}" cy="${pc[1]}" r="${7*u}" fill="${P.ink}"/>
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2}" fill="${P.chip}" stroke="${P.ink}" stroke-opacity=".12"/>
+      <g transform="translate(${x+h*.5} ${y+h/2})" fill="${P.ink}">${[0,45,90,135].map(a=>`<rect x="${-2.5*u}" y="${-10*u}" width="${5*u}" height="${20*u}" rx="${2.5*u}" transform="rotate(${a})"/>`).join('')}</g>
+      <text x="${x+h*.95}" y="${y+h/2}" dominant-baseline="central" font-size="${fs}" font-weight="500" fill="${P.ink}">${esc(txt)}</text></g>`);
+  }
+  const mono='JetBrains Mono, Menlo, monospace';
+  if(S.o.coords){
+    const fs=17*u,lh=22*u,x=34*u,y=44*u;
+    const lines=[`${Math.abs(cen[1]).toFixed(4)}° ${cen[1]>=0?'N':'S'}  ${Math.abs(cen[0]).toFixed(4)}° ${cen[0]>=0?'E':'W'}`,
+      G.real?`ELEV ${Math.round(G.lo).toLocaleString('en-US')}–${Math.round(G.hi).toLocaleString('en-US')} m · CI ${fmtStep(step)} m`:'STYLIZED RELIEF · NOT MEASURED',
+      S.custom?`AREA ${S.custom.s.toFixed(3)}–${S.custom.n.toFixed(3)}° N  ${S.custom.w.toFixed(3)}–${S.custom.e.toFixed(3)}° E`:`${S.country}-ADM1 · ${regionName().toUpperCase()}`];
+    if(G.real)lines.push(`DEM ${S.demName.toUpperCase()}`);
+    if(wantCover&&haveCover)lines.push('LAND COVER ESA WORLDCOVER 2021');
+    if(havePhoto)lines.push(PHOTO[S.photoSrc].credit);
+    out.push(`<g font-family="${mono}" font-size="${fs}" fill="${P.ink}" fill-opacity=".75">${lines.map((l,i)=>`<text x="${x}" y="${y+i*lh}">${esc(l)}</text>`).join('')}</g>`);
+  }
+  if(S.o.scale){
+    const target=W*.16*mpp/1000;const km=niceStep(target,1);const len=km*1000/mpp;const x=34*u,y=H-44*u;
+    out.push(`<g fill="${P.ink}" font-family="${mono}" font-size="${16*u}"><rect x="${x}" y="${y}" width="${len}" height="${5*u}"/><rect x="${x}" y="${y-10*u}" width="${2*u}" height="${15*u}"/><rect x="${x+len-2*u}" y="${y-10*u}" width="${2*u}" height="${15*u}"/><text x="${x+len+12*u}" y="${y+6*u}">${km} km</text></g>`);
+  }
+  out.push('</svg>');
+  const svg=out.join('');S.svg=svg;S.W=W;S.H=H;
+  $('#art').innerHTML=svg;fitArt();
+  $('#meta').innerHTML=`<span><strong>${esc(regionName())}</strong></span><span>${G.real?'Real elevation · '+esc(S.demName):'Stylized relief'}</span><span>${G.real?Math.round(G.lo)+'–'+Math.round(G.hi)+' m':''}</span><span>${(svg.length/1024).toFixed(0)} KB SVG</span>`;
+  const st=$('#demStatus');
+  if(G.real){st.className='status real';st.innerHTML=`<b>Real elevation.</b> ${esc(S.demName)} covers this area. Contour interval ${fmtStep(step)} m.`}
+  else{st.className='status';st.innerHTML=S.dem?`<b>Stylized relief.</b> The loaded file does not cover ${esc(regionName())}. Download a file for this area below.`:`<b>Stylized relief.</b> Shapes are real boundaries; the terrain inside is generated. Load a GeoTIFF for measured elevation.`}
+}
+function fitArt(){const a=$('#art'),s=a.querySelector('svg');if(!s)return;const k=Math.min(a.clientWidth/S.W,a.clientHeight/S.H);s.style.width=Math.floor(S.W*k)+'px';s.style.height=Math.floor(S.H*k)+'px'}
+window.addEventListener('resize',fitArt);
+function fmtStep(s){return s>=1?Math.round(s).toLocaleString('en-US'):s.toFixed(1)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+// ---------- export ----------
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600)}
+function modal(html){$('#modalCard').innerHTML=html;$('#modal').hidden=false;$('#modalCard').querySelector('[data-close]').onclick=()=>$('#modal').hidden=true}
+$('#modal').onclick=e=>{if(e.target.id==='modal')$('#modal').hidden=true};
+$('#copySvg').onclick=()=>{
+  const s=S.svg;
+  navigator.clipboard.writeText(s).then(()=>toast('SVG copied. Paste straight into Figma or Illustrator')).catch(()=>{
+    modal(`<strong>Copy the SVG below</strong><textarea id="svgTxt" readonly></textarea><button class="btn" data-close>Done</button>`);
+    const ta=$('#svgTxt');ta.value=s;ta.focus();ta.select();});
+};
+$('#makePng').onclick=()=>{
+  const scale=2,img=new Image();const url=URL.createObjectURL(new Blob([S.svg],{type:'image/svg+xml'}));
+  img.onload=()=>{const c=document.createElement('canvas');c.width=S.W*scale;c.height=S.H*scale;c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+    c.toBlob(b=>{const u=URL.createObjectURL(b);
+      modal(`<div class="row" style="justify-content:space-between"><strong>${S.W*scale}×${S.H*scale} PNG</strong><button class="btn ghost" data-close style="flex:0">Close</button></div><img src="${u}" alt="Rendered map of ${esc(regionName())}"><p class="hint">Right-click (or long-press) the image and choose Save Image or Copy Image.</p>`)},'image/png')};
+  img.onerror=()=>toast('PNG render failed. Use Copy SVG instead');
+  img.src=url;
+};
+
+render();
+})();
+</script>
