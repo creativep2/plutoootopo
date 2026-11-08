@@ -177,7 +177,7 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
       <label><input type="checkbox" id="lVeg"> Plant density</label>
       <label><input type="checkbox" id="lWater"> Water</label>
     </div>
-    <p class="hint" id="lcStatus">ESA WorldCover 2021, 10 m. Needs the local server: <code>python3 serve.py</code></p>
+    <p class="hint" id="lcStatus">ESA WorldCover 2021, 10 m. Runs through the local server or the live relay.</p>
   </section>
 
   <section>
@@ -438,12 +438,14 @@ let photoJob=null;
 function ensurePhoto(b){
   const key=S.photoSrc+[b.w,b.s,b.e,b.n].join();if(photoJob===key)return;photoJob=key;toast('Loading imagery…');
   fetchPhoto(b,S.photoSrc).then(p=>{if(photoJob!==key)return;S.photo=p;render()})
-    .catch(err=>{console.error(err);toast('Imagery failed. Run python3 serve.py and open the localhost page.')});
+    .catch(err=>{console.error(err);toast('Imagery failed. Check the relay (worker/proxy.js) or run python3 serve.py.')});
 }
 
 // ---------- ESA WorldCover 2021 (3x3 degree COGs on S3; read through serve.py since the bucket sends no CORS headers) ----------
 const WC='https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/';
-const proxied=u=>'/proxy?u='+encodeURIComponent(u);
+// local: serve.py relays; live: the Cloudflare Worker in worker/proxy.js (set its URL here after deploying)
+const RELAY='https://plutoootopo-relay.YOUR-SUBDOMAIN.workers.dev/';
+const proxied=u=>(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)?'/proxy':RELAY)+'?u='+encodeURIComponent(u);
 // class -> plant density weight (a land cover proxy, not NDVI)
 const VEG={10:1,95:1,20:.6,90:.5,30:.35,40:.35,100:.2};
 async function fetchCover(b){
@@ -470,7 +472,7 @@ function ensureCover(b){
   const key=[b.w,b.s,b.e,b.n].join();if(coverJob===key)return;coverJob=key;
   $('#lcStatus').textContent='Fetching land cover…';
   fetchCover(b).then(c=>{if(coverJob!==key)return;S.cover=c;$('#lcStatus').textContent='ESA WorldCover 2021, 10 m.';render()})
-    .catch(err=>{console.error(err);$('#lcStatus').innerHTML='Land cover failed. It needs the local server: <code>python3 serve.py</code>';coverJob=null;
+    .catch(err=>{console.error(err);$('#lcStatus').innerHTML='Land cover failed. Check the relay or run <code>python3 serve.py</code>.';coverJob=null;
       ['lCity','lVeg','lWater'].forEach(id=>$('#'+id).checked=false);S.l={city:false,veg:false,water:false}});
 }
 function coverAt(lon,lat){const c=S.cover,b=c.b;const i=Math.floor((lon-b.w)/(b.e-b.w)*c.nx),j=Math.floor((b.n-lat)/(b.n-b.s)*c.ny);
