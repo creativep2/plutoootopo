@@ -37,7 +37,7 @@ select,input[type=text],input[type=password]{font:inherit;padding:7px 8px;border
 input[type=range]{width:100%;accent-color:var(--accent)}
 .rng{display:grid;grid-template-columns:88px 1fr 46px;align-items:center;gap:8px;font-size:12px}
 .rng output{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
-.seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .seg button{font:inherit;font-size:11.5px;padding:7px 2px;border:0;background:transparent;color:var(--fg);cursor:pointer;border-right:1px solid var(--line)}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed=true]{background:var(--fg);color:var(--panel)}
@@ -83,14 +83,18 @@ main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 #drawBox[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent)}
 #art{touch-action:none;cursor:grab}
-.seg button:nth-child(-n+4){border-bottom:1px solid var(--line)}
-.seg button:nth-child(4n){border-right:0}
+.seg button:nth-child(-n+6){border-bottom:1px solid var(--line)}
+.seg button:nth-child(3n){border-right:0}
+details summary{cursor:pointer;font-size:12px;color:var(--muted);padding:2px 0}
+details[open] summary{margin-bottom:8px}
+details .btn{margin-top:8px;width:100%}
+#art svg{will-change:transform}
 button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
 </style>
 
 <div class="app">
 <aside>
-  <div class="brand"><h1>Terrain Press</h1><span>SEA · ADM1 · v2</span></div>
+  <div class="brand"><h1>Terrain Press</h1><span>SEA · ADM1 · v3</span></div>
 
   <section>
     <h2>Region</h2>
@@ -101,34 +105,28 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
   </section>
 
   <section>
-    <h2>Elevation</h2>
-    <div id="demStatus" class="status"></div>
-    <div class="checks"><label><input type="checkbox" id="autoDem" checked> Fetch automatically (AWS Terrarium)</label></div>
-    <p class="hint">Or load your own GeoTIFF:</p>
-    <ol class="steps">
-      <li>Get a free API key at <a href="https://portal.opentopography.org/requestService?service=api" target="_blank" rel="noopener">OpenTopography</a> and paste it here.
-        <input type="password" id="apikey" placeholder="OpenTopography API key" autocomplete="off" style="margin-top:6px"></li>
-      <li><a id="dlLink" href="#" target="_blank" rel="noopener">Download the GeoTIFF for this area</a> <span id="dlInfo" class="hint"></span></li>
-      <li><div class="file"><button class="btn ghost" type="button" style="width:100%">Load GeoTIFF…</button><input type="file" id="demFile" accept=".tif,.tiff,image/tiff"></div></li>
-    </ol>
-    <p class="hint">One country-wide file covers every province inside it. Without a file, the preview uses stylized terrain built from the shape only.</p>
-  </section>
-
-  <section>
-    <h2>Style</h2>
-    <div class="seg" id="style">
-      <button data-v="atlas" aria-pressed="true">Atlas</button>
-      <button data-v="contour" aria-pressed="false">Contour</button>
-      <button data-v="halftone" aria-pressed="false">Halftone</button>
-      <button data-v="ridges" aria-pressed="false">Ridges</button>
-      <button data-v="bands" aria-pressed="false">Bands</button>
-      <button data-v="heat" aria-pressed="false">Heat</button>
-      <button data-v="outline" aria-pressed="false">Outline</button>
-      <button data-v="photo" aria-pressed="false">Photo</button>
+    <h2>Look</h2>
+    <div class="seg" id="style" aria-label="Presets">
+      <button data-v="atlas">Atlas</button><button data-v="contour">Contour</button><button data-v="heat">Heat</button>
+      <button data-v="bands">Bands</button><button data-v="plants">Plants</button><button data-v="photo">Photo</button>
+      <button data-v="halftone">Halftone</button><button data-v="ridges">Ridges</button><button data-v="outline">Outline</button>
     </div>
     <div class="row">
-      <label>Artboard<select id="ratio"><option value="1:1">1:1 · 1600</option><option value="4:5">4:5 · 1600×2000</option><option value="16:9">16:9 · 1920×1080</option><option value="3:4">3:4 · 1500×2000</option></select></label>
+      <label>Fill<select id="fill"><option value="land">Flat land</option><option value="elev">Elevation</option><option value="plants">Plant density</option><option value="photo">Photo</option><option value="none">None</option></select></label>
+      <label>Lines<select id="lines"><option value="contours">Contours</option><option value="dots">Halftone dots</option><option value="ridges">Ridgelines</option><option value="none">None</option></select></label>
     </div>
+    <label id="fillTypeL">Fill type<select id="fillType"><option value="gradient">Gradient</option><option value="bands">Solid bands</option></select></label>
+    <label id="photoL">Photo source<select id="photoSrc">
+      <option value="esri">Satellite · Esri World Imagery</option>
+      <option value="s2">Satellite · Sentinel-2 cloudless 2016</option>
+      <option value="osm">Road map · OpenStreetMap</option>
+      <option value="topo">Terrain · OpenTopoMap</option></select></label>
+    <div class="checks">
+      <label><input type="checkbox" id="lWater"> Water</label>
+      <label><input type="checkbox" id="lCity"> Cities</label>
+    </div>
+    <p class="hint" id="lcStatus">Plants, water and cities: ESA WorldCover 2021, 10 m.</p>
+    <label>Artboard<select id="ratio"><option value="1:1">1:1 · 1600</option><option value="4:5">4:5 · 1600×2000</option><option value="16:9">16:9 · 1920×1080</option><option value="3:4">3:4 · 1500×2000</option></select></label>
   </section>
 
   <section>
@@ -140,24 +138,15 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
       <label>Ink<input type="color" id="cInk"></label>
       <label>Chip<input type="color" id="cChip"></label>
     </div>
-  </section>
-
-  <section>
-    <h2>Ramps</h2>
-    <div class="colors">
-      <label>Topo low<input type="color" id="tLo" value="#A9C79A"></label>
-      <label>Topo high<input type="color" id="tHi" value="#2F4A2C"></label>
-      <label>Plants low<input type="color" id="vLo" value="#E4EFC4"></label>
-      <label>Plants high<input type="color" id="vHi" value="#2E6B34"></label>
-      <label>Water<input type="color" id="cWater" value="#7FB2D9"></label>
-    </div>
-    <label>Plants as<select id="vegMode"><option value="heat">Heat map</option><option value="bands">Solid bands</option><option value="dots">Dots</option></select></label>
-    <label>Photo source<select id="photoSrc">
-      <option value="esri">Satellite · Esri World Imagery</option>
-      <option value="s2">Satellite · Sentinel-2 cloudless 2016</option>
-      <option value="osm">Road map · OpenStreetMap</option>
-      <option value="topo">Terrain · OpenTopoMap</option></select></label>
-    <p class="hint">Topo colors drive the Bands and Heat styles. Photo needs the local server.</p>
+    <details>
+      <summary>Custom fill and water colors</summary>
+      <div class="colors">
+        <label>Low<input type="color" id="rLo"></label>
+        <label>High<input type="color" id="rHi"></label>
+        <label>Water<input type="color" id="rWater"></label>
+      </div>
+      <button class="btn ghost" id="rReset" type="button">Match palette</button>
+    </details>
   </section>
 
   <section>
@@ -168,16 +157,6 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
     <div class="rng"><span>Relief</span><input type="range" id="exag" min="0.5" max="6" step="0.25" value="2"><output></output></div>
     <div class="rng"><span>Dot / row gap</span><input type="range" id="gap" min="6" max="40" step="1" value="14"><output></output></div>
     <div class="rng"><span>Padding</span><input type="range" id="pad" min="0" max="25" step="1" value="10"><output></output></div>
-  </section>
-
-  <section>
-    <h2>Land cover</h2>
-    <div class="checks">
-      <label><input type="checkbox" id="lCity"> Cities</label>
-      <label><input type="checkbox" id="lVeg"> Plant density</label>
-      <label><input type="checkbox" id="lWater"> Water</label>
-    </div>
-    <p class="hint" id="lcStatus">ESA WorldCover 2021, 10 m. Runs through the local server or the live relay.</p>
   </section>
 
   <section>
@@ -193,6 +172,21 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
       <label><input type="checkbox" id="oTransparent"> No paper</label>
     </div>
     <label>Pin text<input type="text" id="pinText" placeholder="Province name"></label>
+  </section>
+
+  <section>
+    <h2>Elevation</h2>
+    <div id="demStatus" class="status"></div>
+    <div class="checks"><label><input type="checkbox" id="autoDem" checked> Fetch automatically (AWS Terrarium)</label></div>
+    <details>
+      <summary>Use your own GeoTIFF</summary>
+      <ol class="steps">
+        <li>Get a free API key at <a href="https://portal.opentopography.org/requestService?service=api" target="_blank" rel="noopener">OpenTopography</a> and paste it here.
+          <input type="password" id="apikey" placeholder="OpenTopography API key" autocomplete="off" style="margin-top:6px"></li>
+        <li><a id="dlLink" href="#" target="_blank" rel="noopener">Download the GeoTIFF for this area</a> <span id="dlInfo" class="hint"></span></li>
+        <li><div class="file"><button class="btn ghost" type="button" style="width:100%">Load GeoTIFF…</button><input type="file" id="demFile" accept=".tif,.tiff,image/tiff"></div></li>
+      </ol>
+    </details>
   </section>
 </aside>
 
@@ -235,11 +229,11 @@ const PALETTES=[
 ];
 const RATIOS={'1:1':[1600,1600],'4:5':[1600,2000],'16:9':[1920,1080],'3:4':[1500,2000]};
 
-const S={country:'VNM',province:null,style:'atlas',ratio:'1:1',pal:{...PALETTES[0]},palId:'field',
+const S={country:'VNM',province:null,preset:'atlas',fill:'land',fillType:'gradient',lines:'contours',cc:{},ratio:'1:1',pal:{...PALETTES[0]},palId:'field',
   res:220,levels:22,smooth:1,exag:2,gap:14,pad:10,
   o:{outline:true,neighbors:true,pin:true,coords:true,scale:true,grid:false,grain:true,transparent:false},
-  pinText:'',dem:null,demName:'',autoDem:true,l:{city:false,veg:false,water:false},cover:null,
-  view:{k:1,c:null},topo:{lo:'#A9C79A',hi:'#2F4A2C'},veg:{mode:'heat',lo:'#E4EFC4',hi:'#2E6B34'},water:'#7FB2D9',photoSrc:'esri',photo:null};
+  pinText:'',dem:null,demName:'',autoDem:true,l:{city:false,water:false},cover:null,
+  view:{k:1,c:null},photoSrc:'esri',photo:null};
 
 function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -259,18 +253,34 @@ cSel.onchange=()=>{S.custom=null;S.view={k:1,c:null};$('#clearBox').hidden=true;
 pSel.onchange=()=>{S.custom=null;S.view={k:1,c:null};$('#clearBox').hidden=true;S.province=pSel.value;$('#pinText').value='';S.pinText='';render()};
 
 // ---------- controls ----------
-document.querySelectorAll('#style button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('#style button').forEach(x=>x.setAttribute('aria-pressed',x===b));
-  S.style=b.dataset.v;render();});
+// presets only set Fill, Fill type and Lines; every look is one of those combinations
+const PRESETS={atlas:['land','gradient','contours'],contour:['none','gradient','contours'],heat:['elev','gradient','contours'],
+  bands:['elev','bands','none'],plants:['plants','gradient','none'],photo:['photo','gradient','none'],
+  halftone:['land','gradient','dots'],ridges:['none','gradient','ridges'],outline:['none','gradient','none']};
+document.querySelectorAll('#style button').forEach(b=>b.onclick=()=>{[S.fill,S.fillType,S.lines]=PRESETS[b.dataset.v];
+  if(b.dataset.v==='outline'){S.o.outline=true;$('#oOutline').checked=true}syncUI();render()});
+['fill','fillType','lines','photoSrc'].forEach(k=>$('#'+k).onchange=e=>{S[k]=e.target.value;syncUI();render()});
+// fill ramp and water follow the palette unless the user picks custom colors
+function colors(){const P=S.pal,hex=c=>d3.color(c).formatHex();
+  return{lo:S.cc.lo||hex(S.fill==='plants'?d3.interpolateLab(P.paper,P.land)(.45):P.land),hi:S.cc.hi||hex(P.ink),water:S.cc.water||hex(d3.interpolateLab(P.paper,'#3B7EA1')(.5))}}
+function syncUI(){
+  ['fill','fillType','lines','photoSrc'].forEach(k=>$('#'+k).value=S[k]);
+  $('#fillTypeL').hidden=!['elev','plants'].includes(S.fill);$('#photoL').hidden=S.fill!=='photo';
+  const hit=Object.keys(PRESETS).find(k=>PRESETS[k].join()===[S.fill,S.fillType,S.lines].join());
+  document.querySelectorAll('#style button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===hit));
+  const K=colors();$('#rLo').value=K.lo;$('#rHi').value=K.hi;$('#rWater').value=K.water;
+}
+[['rLo','lo'],['rHi','hi'],['rWater','water']].forEach(([id,k])=>$('#'+id).oninput=e=>{S.cc[k]=e.target.value;debounced()});
+$('#rReset').onclick=()=>{S.cc={};syncUI();render()};
 $('#ratio').onchange=e=>{S.ratio=e.target.value;render()};
 const sw=$('#swatches');
 PALETTES.forEach(p=>{const b=document.createElement('button');b.className='sw';b.title=p.name;b.setAttribute('aria-label',p.name+' palette');
   b.style.background=p.paper;b.innerHTML=`<i style="background:${p.land}"></i><b style="background:${p.ink}"></b>`;
   b.setAttribute('aria-pressed',p.id===S.palId);
-  b.onclick=()=>{S.pal={...p};S.palId=p.id;syncColors();sw.querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b));render()};
+  b.onclick=()=>{S.pal={...p};S.palId=p.id;S.cc={};syncColors();syncUI();sw.querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b));render()};
   sw.appendChild(b)});
 function syncColors(){$('#cPaper').value=S.pal.paper;$('#cLand').value=S.pal.land;$('#cInk').value=S.pal.ink;$('#cChip').value=S.pal.chip}
-syncColors();
+syncColors();syncUI();
 [['#cPaper','paper'],['#cLand','land'],['#cInk','ink'],['#cChip','chip']].forEach(([id,k])=>$(id).oninput=e=>{S.pal[k]=e.target.value;debounced()});
 ['res','levels','smooth','exag','gap','pad'].forEach(k=>{const el=$('#'+k),out=el.nextElementSibling;
   const show=()=>out.textContent=el.value;show();el.oninput=()=>{S[k]=+el.value;show();debounced()}});
@@ -279,10 +289,7 @@ syncColors();
 $('#pinText').oninput=e=>{S.pinText=e.target.value;debounced()};
 const key=$('#apikey');key.value=load('ot_key')||'';key.oninput=()=>{store('ot_key',key.value.trim());updateDl()};
 $('#autoDem').onchange=e=>{S.autoDem=e.target.checked;render()};
-[['lCity','city'],['lVeg','veg'],['lWater','water']].forEach(([id,k])=>$('#'+id).onchange=e=>{S.l[k]=e.target.checked;render()});
-[['tLo',v=>S.topo.lo=v],['tHi',v=>S.topo.hi=v],['vLo',v=>S.veg.lo=v],['vHi',v=>S.veg.hi=v],['cWater',v=>S.water=v]].forEach(([id,f])=>$('#'+id).oninput=e=>{f(e.target.value);debounced()});
-$('#vegMode').onchange=e=>{S.veg.mode=e.target.value;render()};
-$('#photoSrc').onchange=e=>{S.photoSrc=e.target.value;render()};
+[['lCity','city'],['lWater','water']].forEach(([id,k])=>$('#'+id).onchange=e=>{S.l[k]=e.target.checked;render()});
 
 // ---------- pan, zoom, lasso ----------
 const NS='http://www.w3.org/2000/svg',drawBtn=$('#drawBox'),art=$('#art');let drag=null;
@@ -299,32 +306,51 @@ function zoomAt(pt,f){
   const[W,H]=RATIOS[S.ratio],k=Math.max(.25,Math.min(512,S.view.k*f));f=k/S.view.k;
   S.view={k,c:S.proj.invert([pt[0]+(W/2-pt[0])/f,pt[1]+(H/2-pt[1])/f])};S.proj=projFor(currentFeature());debounced();
 }
-const svgPt=e=>{const r=art.querySelector('svg').getBoundingClientRect();return[(e.clientX-r.left)*S.W/r.width,(e.clientY-r.top)*S.H/r.height]};
+// Interaction previews with a CSS transform of the current SVG (cheap) and re-renders once input settles.
+// css maps the rendered image to the current view: p_view = s * p_rendered + t (artboard units).
+let css={s:1,t:[0,0]};
+function cssApply(extra=[0,0]){const svg=art.querySelector('svg');if(!svg)return;const k=svg.clientWidth/S.W;
+  svg.style.transformOrigin='0 0';svg.style.transform=`translate(${(css.t[0]+extra[0])*k}px,${(css.t[1]+extra[1])*k}px) scale(${css.s})`}
+// pointer -> current-view artboard coordinates
+const svgPt=e=>{const r=art.querySelector('svg').getBoundingClientRect();return[(e.clientX-r.left)*S.W/r.width*css.s+css.t[0],(e.clientY-r.top)*S.H/r.height*css.s+css.t[1]]};
+function zoomAt(pt,f){
+  const[W,H]=RATIOS[S.ratio],k=Math.max(.25,Math.min(512,S.view.k*f));f=k/S.view.k;if(f===1)return;
+  S.view={k,c:S.proj.invert([pt[0]+(W/2-pt[0])/f,pt[1]+(H/2-pt[1])/f])};S.proj=projFor(currentFeature());
+  css={s:css.s*f,t:[css.t[0]*f+pt[0]*(1-f),css.t[1]*f+pt[1]*(1-f)]};cssApply();settle();
+}
+let settleT;function settle(){clearTimeout(settleT);settleT=setTimeout(render,260)}
 $('#zIn').onclick=()=>zoomAt([S.W/2,S.H/2],1.6);
 $('#zOut').onclick=()=>zoomAt([S.W/2,S.H/2],1/1.6);
 $('#zFit').onclick=()=>{S.view={k:1,c:null};render()};
 art.addEventListener('wheel',e=>{if(!art.querySelector('svg'))return;e.preventDefault();zoomAt(svgPt(e),Math.exp(-e.deltaY*.0015))},{passive:false});
-art.addEventListener('pointerdown',e=>{const svg=art.querySelector('svg');if(!svg||e.button>0)return;
+// lasso: drop points closer than 8 units, then Chaikin corner-cutting for a smooth closed curve
+function smoothRing(pts){let p=[];for(const q of pts){const l=p[p.length-1];if(!l||Math.hypot(q[0]-l[0],q[1]-l[1])>=8)p.push(q)}
+  for(let it=0;it<4&&p.length>2;it++){const o=[];for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];
+    o.push([.75*a[0]+.25*b[0],.75*a[1]+.25*b[1]],[.25*a[0]+.75*b[0],.25*a[1]+.75*b[1]])}p=o}
+  return p}
+art.addEventListener('pointerdown',e=>{if(!art.querySelector('svg')||e.button>0)return;
   e.preventDefault();art.setPointerCapture(e.pointerId);
-  if(lassoOn()){const el=document.createElementNS(NS,'path');
-    [['fill',S.pal.chip],['fill-opacity','.35'],['stroke',S.pal.ink],['stroke-width','3'],['stroke-dasharray','12 8']].forEach(([k,v])=>el.setAttribute(k,v));
-    svg.appendChild(el);drag={lasso:true,pts:[svgPt(e)],el}}
-  else{drag={sx:e.clientX,sy:e.clientY,svg};art.style.cursor='grabbing'}});
+  if(lassoOn()){clearTimeout(settleT);if(css.s!==1||css.t[0]||css.t[1])render(); // lasso draws on an untransformed SVG
+    const el=document.createElementNS(NS,'path');
+    [['fill',S.pal.chip],['fill-opacity','.35'],['stroke',S.pal.ink],['stroke-width','3'],['stroke-linejoin','round']].forEach(([k,v])=>el.setAttribute(k,v));
+    art.querySelector('svg').appendChild(el);drag={lasso:true,pts:[svgPt(e)],el}}
+  else{drag={sx:e.clientX,sy:e.clientY};art.style.cursor='grabbing'}});
 art.addEventListener('pointermove',e=>{if(!drag)return;
-  if(drag.lasso){const p=svgPt(e),q=drag.pts[drag.pts.length-1];if(Math.hypot(p[0]-q[0],p[1]-q[1])<4)return;
-    drag.pts.push(p);drag.el.setAttribute('d','M'+drag.pts.map(p=>f2(p[0])+' '+f2(p[1])).join('L')+'Z')}
-  else drag.svg.style.transform=`translate(${e.clientX-drag.sx}px,${e.clientY-drag.sy}px)`});
+  if(drag.lasso){for(const ev of (e.getCoalescedEvents?.()||[e]))drag.pts.push(svgPt(ev));
+    const p=smoothRing(drag.pts);if(p.length>2)drag.el.setAttribute('d','M'+p.map(q=>f2(q[0])+' '+f2(q[1])).join('L')+'Z')}
+  else{const k=art.querySelector('svg').clientWidth/S.W;cssApply([(e.clientX-drag.sx)/k,(e.clientY-drag.sy)/k])}});
 art.addEventListener('pointerup',e=>{if(!drag)return;const d=drag;drag=null;art.style.cursor='';
   if(d.lasso){
-    if(d.pts.length<3){render();return}
-    const ring=d.pts.map(p=>S.proj.invert(p));ring.push(ring[0]);
+    const pts=smoothRing(d.pts);if(pts.length<3){render();return}
+    const ring=pts.map(p=>S.proj.invert(p));ring.push(ring[0]);
     if(d3.geoArea({type:'Polygon',coordinates:[ring]})>2*Math.PI)ring.reverse(); // d3 wants clockwise exterior rings
     const bb=d3.geoBounds({type:'Polygon',coordinates:[ring]});
     S.custom={ring,w:bb[0][0],s:bb[0][1],e:bb[1][0],n:bb[1][1]};S.view={k:1,c:null};
     drawBtn.setAttribute('aria-pressed','false');$('#clearBox').hidden=false;$('#pinText').value='';S.pinText='';render();return}
-  const r=d.svg.getBoundingClientRect(),dx=(e.clientX-d.sx)*S.W/r.width,dy=(e.clientY-d.sy)*S.H/r.height;
-  if(Math.abs(dx)+Math.abs(dy)<3){d.svg.style.transform='';return}
-  S.view={k:S.view.k,c:S.proj.invert([S.W/2-dx,S.H/2-dy])};render()});
+  const k=art.querySelector('svg').clientWidth/S.W,dx=(e.clientX-d.sx)/k,dy=(e.clientY-d.sy)/k;
+  if(Math.abs(dx)+Math.abs(dy)<3){cssApply();return}
+  S.view={k:S.view.k,c:S.proj.invert([S.W/2-dx,S.H/2-dy])};S.proj=projFor(currentFeature());
+  css={s:css.s,t:[css.t[0]+dx,css.t[1]+dy]};cssApply();settle()});
 
 let tmr;function debounced(){clearTimeout(tmr);tmr=setTimeout(render,120)}
 
@@ -473,37 +499,32 @@ function ensureCover(b){
   $('#lcStatus').textContent='Fetching land cover…';
   fetchCover(b).then(c=>{if(coverJob!==key)return;S.cover=c;$('#lcStatus').textContent='ESA WorldCover 2021, 10 m.';render()})
     .catch(err=>{console.error(err);$('#lcStatus').innerHTML='Land cover failed. Check the relay or run <code>python3 serve.py</code>.';coverJob=null;
-      ['lCity','lVeg','lWater'].forEach(id=>$('#'+id).checked=false);S.l={city:false,veg:false,water:false}});
+      ['lCity','lWater'].forEach(id=>$('#'+id).checked=false);S.l={city:false,water:false};if(S.fill==='plants'){S.fill='land';syncUI()}});
 }
 function coverAt(lon,lat){const c=S.cover,b=c.b;const i=Math.floor((lon-b.w)/(b.e-b.w)*c.nx),j=Math.floor((b.n-lat)/(b.n-b.s)*c.ny);
   return i<0||j<0||i>=c.nx||j>=c.ny?0:c.data[j*c.nx+i]}
 // land cover layers on a screen grid: water + city as filled contours, plants as a density stipple
-function coverLayers(proj,W,H){
+// returns SVG strings for the plants fill (if Fill is plants) and the water and city features
+function coverLayers(proj,W,H,K){
   const nx=Math.min(900,S.res*3),cs=W/nx,ny=Math.round(H/cs),N=nx*ny;
   const water=new Float64Array(N),city=new Float64Array(N),veg=new Float32Array(N),all=new Uint8Array(N).fill(1);
   for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const ll=proj.invert([(i+.5)*cs,(j+.5)*cs]),v=coverAt(ll[0],ll[1]),k=j*nx+i;
     water[k]=v===80?1:0;city[k]=v===50?1:0;veg[k]=VEG[v]||0}
   const gp=d3.geoPath(d3.geoTransform({point(x,y){this.stream.point(f2(x*cs),f2(y*cs))}}));
   const blob=a=>gp(d3.contours().size([nx,ny]).thresholds([.5])(a)[0]);
-  const out=[];
-  const ramp=(t,n)=>d3.interpolateLab(S.veg.lo,S.veg.hi)(t);
-  if(S.l.veg){for(let p=0;p<3;p++)blur(veg,all,nx,ny);
-    if(S.veg.mode==='heat'){const L=lutOf(S.veg.lo,S.veg.hi);
-      out.push(`<g id="plants"><image href="${rasterURL(nx,ny,k=>veg[k]<.06?null:L[Math.min(255,veg[k]*255|0)])}" width="${nx*cs}" height="${ny*cs}" preserveAspectRatio="none"/></g>`)}
-    else if(S.veg.mode==='bands'){const ths=[.12,.3,.5,.7,.88];
-      out.push(`<g id="plants">${d3.contours().size([nx,ny]).thresholds(ths)(Float64Array.from(veg)).map((c,i)=>`<path d="${gp(c)}" fill="${ramp(i/(ths.length-1))}"/>`).join('')}</g>`)}
-    else{const gap=S.gap*.8,maxR=gap*.42;let d='';
-      for(let y=gap/2,row=0;y<H;y+=gap*.866,row++)for(let x=(row%2?gap:gap/2);x<W;x+=gap){
-        const t=veg[Math.min(ny-1,y/cs|0)*nx+Math.min(nx-1,x/cs|0)];if(t<.08)continue;const r=maxR*Math.sqrt(t);
-        d+=`M${f2(x-r)} ${f2(y)}a${f2(r)} ${f2(r)} 0 1 0 ${f2(2*r)} 0a${f2(r)} ${f2(r)} 0 1 0 ${f2(-2*r)} 0`}
-      out.push(`<g id="plants"><path d="${d}" fill="${S.veg.hi}"/></g>`)}}
+  const o={plants:'',water:'',city:''};
+  if(S.fill==='plants'){for(let p=0;p<3;p++)blur(veg,all,nx,ny);
+    if(S.fillType==='gradient'){const L=lutOf(K.lo,K.hi);
+      o.plants=`<g id="plants"><image href="${rasterURL(nx,ny,k=>L[Math.min(255,veg[k]*255|0)])}" width="${nx*cs}" height="${ny*cs}" preserveAspectRatio="none"/></g>`}
+    else{const ths=[.12,.3,.5,.7,.88],ramp=d3.interpolateLab(K.lo,K.hi);
+      o.plants=`<g id="plants">${d3.contours().size([nx,ny]).thresholds(ths)(Float64Array.from(veg)).map((c,i)=>`<path d="${gp(c)}" fill="${ramp((i+1)/ths.length)}"/>`).join('')}</g>`}}
   if(S.l.water){
     // fill, darker shoreline, then lighter ripple lines at fixed distances from shore
-    const wm=Uint8Array.from(water),D=Float64Array.from(chamfer(wm,nx,ny),v=>v>1e8?0:v),wc=d3.color(S.water);
+    const wm=Uint8Array.from(water),D=Float64Array.from(chamfer(wm,nx,ny),v=>v>1e8?0:v),wc=d3.color(K.water);
     const rip=d3.contours().size([nx,ny]).thresholds([6,14,26].map(px=>px/cs))(D);
-    out.push(`<g id="water"><path d="${blob(water)}" fill="${S.water}" stroke="${wc.darker(1)}" stroke-width="1.4" stroke-linejoin="round"/>${rip.map((c,i)=>`<path d="${gp(c)}" fill="none" stroke="${wc.brighter(.9)}" stroke-opacity="${.75-i*.2}" stroke-width="1"/>`).join('')}</g>`)}
-  if(S.l.city)out.push(`<g id="cities"><path d="${blob(city)}" fill="${S.pal.ink}" fill-opacity=".8"/></g>`);
-  return out.join('');
+    o.water=`<g id="water"><path d="${blob(water)}" fill="${K.water}" stroke="${wc.darker(1)}" stroke-width="1.4" stroke-linejoin="round"/>${rip.map((c,i)=>`<path d="${gp(c)}" fill="none" stroke="${wc.brighter(.9)}" stroke-opacity="${.75-i*.2}" stroke-width="1"/>`).join('')}</g>`}
+  if(S.l.city)o.city=`<g id="cities"><path d="${blob(city)}" fill="${S.pal.ink}" fill-opacity=".8"/></g>`;
+  return o;
 }
 
 // 256-step Lab ramp as [r,g,b] triples
@@ -584,11 +605,11 @@ function render(){
   if(!(fb.w<fb.e&&fb.s<fb.n))fb=fb0;
   const fbp={w:fb.w-.02,s:fb.s-.02,e:fb.e+.02,n:fb.n+.02};
   if(S.autoDem&&(!demCovers(fb)||(S.dem.merc&&S.dem.merc.z<pickZoom(fbp,13,48))))ensureDem(fbp);
-  const wantCover=S.l.city||S.l.veg||S.l.water,C=S.cover;
+  const wantCover=S.fill==='plants'||S.l.city||S.l.water,C=S.cover;
   const haveCover=C&&C.b.w<=fb.w&&C.b.e>=fb.e&&C.b.s<=fb.s&&C.b.n>=fb.n;
   if(wantCover&&(!haveCover||(C.b.e-C.b.w)/C.nx>2*(fb.e-fb.w)/1400))ensureCover(fb);
-  const PH=S.photo,havePhoto=S.style==='photo'&&PH&&PH.src===S.photoSrc&&PH.b.w<=fb.w&&PH.b.e>=fb.e&&PH.b.s<=fb.s&&PH.b.n>=fb.n;
-  if(S.style==='photo'&&(!havePhoto||PH.z<pickZoom(fb,PHOTO[S.photoSrc].max,36)))ensurePhoto(fb);
+  const PH=S.photo,havePhoto=S.fill==='photo'&&PH&&PH.src===S.photoSrc&&PH.b.w<=fb.w&&PH.b.e>=fb.e&&PH.b.s<=fb.s&&PH.b.n>=fb.n;
+  if(S.fill==='photo'&&(!havePhoto||PH.z<pickZoom(fb,PHOTO[S.photoSrc].max,36)))ensurePhoto(fb);
   const G=buildGrid(proj,feat,W,H,fb);
   const mid=proj.invert([W/2,H/2]),mpp=d3.geoDistance(mid,proj.invert([W/2+1,H/2]))*6371000;
   const step=niceStep(G.hi-G.lo,S.levels);
@@ -609,53 +630,50 @@ function render(){
     const view=d3.geoPath(proj);let d='';
     const vb=[proj.invert([0,0]),proj.invert([W,H])];
     for(const f of others){const b=d3.geoBounds(f);if(b[1][0]<vb[0][0]||b[0][0]>vb[1][0]||b[1][1]<vb[1][1]||b[0][1]>vb[0][1])continue;d+=view(f)||''}
-    if(d)out.push(`<path d="${d}" fill="${['contour','halftone','ridges','outline'].includes(S.style)?'none':P.land}" fill-opacity=".32" stroke="${P.ink}" stroke-opacity=".28" stroke-width="1"/>`);
+    if(d)out.push(`<path d="${d}" fill="${S.fill==='none'?'none':P.land}" fill-opacity=".32" stroke="${P.ink}" stroke-opacity=".28" stroke-width="1"/>`);
   }
   const lineD=(i)=>gp(cont[i]);
-  if(S.style==='atlas'){
-    out.push(`<path d="${focus}" fill="${P.land}"/>`);
-    out.push(`<g clip-path="url(#clip)"><rect width="${W}" height="${H}" fill="url(#dots)"/>`);
-    cont.forEach((c,i)=>{const idx=Math.round(ths[i]/step)%5===0;out.push(`<path d="${lineD(i)}" fill="none" stroke="${P.ink}" stroke-opacity="${idx?.6:.32}" stroke-width="${idx?1.6:.8}" stroke-linejoin="round"/>`)});
-    out.push(`</g>`);
-  }else if(S.style==='contour'){
-    out.push(`<g clip-path="url(#clip)">`);
-    cont.forEach((c,i)=>{const idx=Math.round(ths[i]/step)%5===0;out.push(`<path d="${lineD(i)}" fill="none" stroke="${P.ink}" stroke-width="${idx?2.2:1}" stroke-linejoin="round"/>`)});
-    out.push(`</g>`);
-  }else if(S.style==='heat'){
-    const sh=hillshade(G,mpp),L=lutOf(S.topo.lo,S.topo.hi),rg=G.hi-G.lo||1;
-    const url=rasterURL(G.nx,G.ny,k=>{if(!G.mask[k])return null;const c=L[Math.max(0,Math.min(255,(G.val[k]-G.lo)/rg*255|0))],m=.7+.3*sh[k];return[c[0]*m,c[1]*m,c[2]*m]});
-    out.push(`<g clip-path="url(#clip)"><image href="${url}" width="${G.nx*G.cs}" height="${G.ny*G.cs}" preserveAspectRatio="none"/>`);
-    cont.forEach((c,i)=>{if(Math.round(ths[i]/step)%5===0)out.push(`<path d="${lineD(i)}" fill="none" stroke="${P.ink}" stroke-opacity=".3" stroke-width="1" stroke-linejoin="round"/>`)});
-    out.push(`</g>`);
-  }else if(S.style==='outline'){
-    // outline only: the boundary is drawn below with the outline overlay
-  }else if(S.style==='photo'){
-    out.push(`<path d="${focus}" fill="${P.land}"/>`);
-    if(havePhoto){const a=proj([PH.bb[0],PH.bb[1]]),c=proj([PH.bb[2],PH.bb[3]]);
-      out.push(`<g clip-path="url(#clip)"><image href="${PH.url}" x="${f2(a[0])}" y="${f2(a[1])}" width="${f2(c[0]-a[0])}" height="${f2(c[1]-a[1])}" preserveAspectRatio="none"/></g>`)}
-  }else if(S.style==='bands'){
-    const ramp=d3.interpolateLab(S.topo.lo,S.topo.hi);
-    out.push(`<path d="${focus}" fill="${S.topo.lo}"/><g clip-path="url(#clip)">`);
-    cont.forEach((c,i)=>out.push(`<path d="${lineD(i)}" fill="${ramp(Math.pow((i+1)/(cont.length+1),.9))}" stroke="${P.paper}" stroke-opacity=".45" stroke-width=".8"/>`));
-    out.push(`</g>`);
-  }else if(S.style==='halftone'){
+  const K=colors(),LC=wantCover&&haveCover?coverLayers(proj,W,H,K):null;
+  // 1. fill
+  if(S.fill!=='none')out.push(`<path d="${focus}" fill="${S.fill==='elev'||S.fill==='plants'?K.lo:P.land}"/>`);
+  out.push(`<g clip-path="url(#clip)">`);
+  if(S.fill==='land')out.push(`<rect width="${W}" height="${H}" fill="url(#dots)"/>`);
+  else if(S.fill==='elev'&&S.fillType==='gradient'){
+    const sh=hillshade(G,mpp),L=lutOf(K.lo,K.hi),rg=G.hi-G.lo||1;
+    const url=rasterURL(G.nx,G.ny,k=>{if(!G.mask[k])return null;const c=L[Math.max(0,Math.min(255,(G.val[k]-G.lo)/rg*255|0))],m=.72+.28*sh[k];return[c[0]*m,c[1]*m,c[2]*m]});
+    out.push(`<image id="elevation" href="${url}" width="${G.nx*G.cs}" height="${G.ny*G.cs}" preserveAspectRatio="none"/>`)}
+  else if(S.fill==='elev'){const ramp=d3.interpolateLab(K.lo,K.hi);
+    out.push(`<g id="elevation">${cont.map((c,i)=>`<path d="${lineD(i)}" fill="${ramp((i+1)/(cont.length+1))}"/>`).join('')}</g>`)}
+  else if(S.fill==='plants'&&LC)out.push(LC.plants);
+  else if(S.fill==='photo'&&havePhoto){const a=proj([PH.bb[0],PH.bb[1]]),c=proj([PH.bb[2],PH.bb[3]]);
+    out.push(`<image id="photo" href="${PH.url}" x="${f2(a[0])}" y="${f2(a[1])}" width="${f2(c[0]-a[0])}" height="${f2(c[1]-a[1])}" preserveAspectRatio="none"/>`)}
+  // 2. lines
+  const onFill=S.fill!=='none',lineInk=S.fill==='photo'?P.paper:P.ink;
+  if(S.lines==='contours'){out.push(`<g id="contours" fill="none" stroke="${lineInk}" stroke-linejoin="round">`);
+    cont.forEach((c,i)=>{const idx=Math.round(ths[i]/step)%5===0;
+      out.push(onFill?`<path d="${lineD(i)}" stroke-opacity="${idx?.55:.28}" stroke-width="${idx?1.5:.8}"/>`:`<path d="${lineD(i)}" stroke-width="${idx?2.2:1}"/>`)});
+    out.push(`</g>`)}
+  else if(S.lines==='dots'){
     const sh=hillshade(G,mpp);const gap=S.gap,maxR=gap*.5;let d='';
     for(let y=gap/2,row=0;y<H;y+=gap*.866,row++)for(let x=(row%2?gap:gap/2);x<W;x+=gap){
       const i=Math.min(G.nx-1,x/G.cs|0),j=Math.min(G.ny-1,y/G.cs|0),k=j*G.nx+i;if(!G.mask[k])continue;
       const e=(G.val[k]-G.lo)/(G.hi-G.lo||1);const t=Math.min(1,(1-sh[k])*.85+e*.2);const r=maxR*Math.sqrt(Math.max(.04,t));
       d+=`M${f2(x-r)} ${f2(y)}a${f2(r)} ${f2(r)} 0 1 0 ${f2(2*r)} 0a${f2(r)} ${f2(r)} 0 1 0 ${f2(-2*r)} 0`;}
-    out.push(`<path d="${focus}" fill="${P.land}" fill-opacity=".35"/><path d="${d}" fill="${P.ink}"/>`);
-  }else if(S.style==='ridges'){
-    const gap=S.gap,amp=gap*S.exag*4;const bg=S.o.transparent?P.land:P.paper;
+    out.push(`<path id="dots" d="${d}" fill="${lineInk}" fill-opacity="${onFill?.75:1}"/>`)}
+  else if(S.lines==='ridges'){
+    // ridgelines hide what is behind them, so each row is backed with the land (or paper) color
+    const gap=S.gap,amp=gap*S.exag*4;const bg=onFill||S.o.transparent?P.land:P.paper;out.push(`<g id="ridges">`);
     for(let y=gap/2;y<H+amp;y+=gap){const j=Math.min(G.ny-1,Math.floor(y/G.cs));if(y/G.cs>=G.ny)break;
       let seg=[];const segs=[];
       for(let i=0;i<G.nx;i++){const k=j*G.nx+i;if(G.mask[k]){const e=(G.val[k]-G.lo)/(G.hi-G.lo||1);seg.push([f2((i+.5)*G.cs),f2(y-e*amp)])}else if(seg.length){segs.push(seg);seg=[]}}
       if(seg.length)segs.push(seg);
       for(const s of segs){if(s.length<2)continue;const top='M'+s.map(p=>p.join(' ')).join('L');
         out.push(`<path d="${top}L${s[s.length-1][0]} ${y}L${s[0][0]} ${y}Z" fill="${bg}"/><path d="${top}" fill="none" stroke="${P.ink}" stroke-width="1.6" stroke-linejoin="round"/>`)}}
-  }
-  if(wantCover&&haveCover)out.push(`<g clip-path="url(#clip)">${coverLayers(proj,W,H)}</g>`);
-  if(S.o.outline||S.style==='outline')out.push(`<path d="${focus}" fill="none" stroke="${P.ink}" stroke-width="${S.style==='ridges'?1:S.style==='outline'?3:2}" stroke-linejoin="round"/>`);
+    out.push(`</g>`)}
+  // 3. features
+  if(LC)out.push(LC.water+LC.city);
+  out.push(`</g>`);
+  if(S.o.outline)out.push(`<path d="${focus}" fill="none" stroke="${P.ink}" stroke-width="${S.lines==='ridges'?1:!onFill&&S.lines==='none'?3:2}" stroke-linejoin="round"/>`);
   if(S.o.grain)out.push(`<rect width="${W}" height="${H}" fill="${P.ink}" filter="url(#grain)" opacity=".16" style="mix-blend-mode:multiply"/>`);
   const u=Math.min(W,H)/1600;
   const cen=d3.geoCentroid(largestPolyFeature(feat));let pc=proj(cen);
@@ -685,7 +703,7 @@ function render(){
   }
   out.push('</svg>');
   const svg=out.join('');S.svg=svg;S.W=W;S.H=H;
-  $('#art').innerHTML=svg;fitArt();
+  clearTimeout(settleT);css={s:1,t:[0,0]};$('#art').innerHTML=svg;fitArt();
   $('#meta').innerHTML=`<span><strong>${esc(regionName())}</strong></span><span>${G.real?'Real elevation · '+esc(S.demName):'Stylized relief'}</span><span>${G.real?Math.round(G.lo)+'–'+Math.round(G.hi)+' m':''}</span><span>${(svg.length/1024).toFixed(0)} KB SVG</span>`;
   const st=$('#demStatus');
   if(G.real){st.className='status real';st.innerHTML=`<b>Real elevation.</b> ${esc(S.demName)} covers this area. Contour interval ${fmtStep(step)} m.`}
