@@ -41,7 +41,17 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .seg button{font:inherit;font-size:11.5px;padding:7px 2px;border:0;background:transparent;color:var(--fg);cursor:pointer;border-right:1px solid var(--line)}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed=true]{background:var(--fg);color:var(--panel)}
-.swatches{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.slots{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.slot{display:flex;align-items:center;gap:8px;font:inherit;font-size:11.5px;text-align:left;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);cursor:pointer;min-width:0}
+.slot i{flex:none;width:22px;height:22px;border-radius:4px;border:1px solid var(--line)}
+.slot span{display:flex;flex-direction:column;min-width:0}.slot small{font-family:var(--mono);font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.picker{position:fixed;z-index:20;width:330px;max-height:70vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:10px}
+.picker h3{margin:10px 0 4px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.picker .fam{display:grid;grid-template-columns:86px repeat(11,1fr);gap:2px;align-items:center;margin:2px 0}
+.picker .fam span{font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.picker button{aspect-ratio:1;border:1px solid rgba(0,0,0,.08);border-radius:3px;padding:0;cursor:pointer}
+.picker button[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:1px}
 .sw{aspect-ratio:1;max-width:100%;border-radius:6px;border:1px solid var(--line);cursor:pointer;padding:0;position:relative;overflow:hidden}
 .sw[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:2px}
 .sw i{position:absolute;inset:auto 0 0 0;height:45%}
@@ -132,21 +142,9 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
   <section>
     <h2>Palette</h2>
     <div class="swatches" id="swatches"></div>
-    <div class="colors">
-      <label>Paper<input type="color" id="cPaper"></label>
-      <label>Land<input type="color" id="cLand"></label>
-      <label>Ink<input type="color" id="cInk"></label>
-      <label>Chip<input type="color" id="cChip"></label>
-    </div>
-    <details>
-      <summary>Custom fill and water colors</summary>
-      <div class="colors">
-        <label>Low<input type="color" id="rLo"></label>
-        <label>High<input type="color" id="rHi"></label>
-        <label>Water<input type="color" id="rWater"></label>
-      </div>
-      <button class="btn ghost" id="rReset" type="button">Match palette</button>
-    </details>
+    <p class="hint" id="themeHint"></p>
+    <div class="slots" id="slots"></div>
+    <p class="hint">Colors come only from the Pluto token sets (2026, 2024). Click a slot to change it.</p>
   </section>
 
   <section>
@@ -205,11 +203,13 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
 </main>
 </div>
 <div id="toast" class="toast" hidden></div>
+<div id="picker" class="picker" hidden role="dialog" aria-label="Pick a token color"></div>
 <div id="modal" class="modal" hidden><div class="card" id="modalCard"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
 <script type="application/json" id="sea">__DATA__</script>
+<script type="application/json" id="tokens">__COLORS__</script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -218,18 +218,22 @@ const FEATS=RAW.provinces.map(p=>({type:'Feature',properties:{name:p.n,c:p.c,t:p
 const COUNTRIES=Object.entries(RAW.countries).sort((a,b)=>a[1].localeCompare(b[1]));
 
 // Palettes built from the Pluto token file, plus one matched to the reference board.
+// Every color below is a Pluto token (checked against brand-colors.json at startup). look = the preset it is tuned for.
 const PALETTES=[
-  {id:'field',name:'Field',paper:'#F5F4EF',land:'#A9C79A',ink:'#2F4A2C',chip:'#E0F7A1'},
-  {id:'plutonium',name:'Plutonium',paper:'#E5EBFF',land:'#99ADFF',ink:'#001E99',chip:'#FFFFFF'},
-  {id:'cryo',name:'Cryogenic',paper:'#072C2C',land:'#106F6E',ink:'#63E8E6',chip:'#99FFF5'},
-  {id:'starlight',name:'Starlight',paper:'#FFFAE5',land:'#FFD833',ink:'#1A1500',chip:'#FFFFFF'},
-  {id:'scarlet',name:'Scarlet',paper:'#FF5500',land:'#FF9966',ink:'#1A0900',chip:'#FFEEE5'},
-  {id:'cyber',name:'Cyber night',paper:'#17191C',land:'#2B3035',ink:'#C1EF43',chip:'#C1EF43'},
-  {id:'violet',name:'Ultraviolet',paper:'#F2F0FF',land:'#BCB3FF',ink:'#261E66',chip:'#FFFFFF'}
+  {id:'field',name:'Field',look:'atlas',paper:'#F3F1EB',land:'#E0F7A1',ink:'#354706',chip:'#C1EF43',lo:'#F0FBD0',hi:'#59760A',water:'#99E6FF'},
+  {id:'blueprint',name:'Blueprint',look:'contour',paper:'#0028CC',land:'#0032FF',ink:'#E5EBFF',chip:'#FFFFFF',lo:'#335BFF',hi:'#CCD6FF',water:'#001E99'},
+  {id:'glacier',name:'Glacier',look:'heat',paper:'#E9FCFB',land:'#90EFED',ink:'#072C2C',chip:'#99FFF5',lo:'#90EFED',hi:'#0A4342',water:'#66D9FF'},
+  {id:'solar',name:'Solar',look:'bands',paper:'#FFEEE5',land:'#FFBB99',ink:'#331100',chip:'#FFFFFF',lo:'#FFDDCC',hi:'#993300',water:'#CCF2FF'},
+  {id:'jungle',name:'Jungle',look:'plants',paper:'#F8F7F4',land:'#EDFBC9',ink:'#013227',chip:'#E3F8AA',lo:'#F5FDE0',hi:'#027E61',water:'#83E7F4'},
+  {id:'darkroom',name:'Darkroom',look:'photo',paper:'#17191C',land:'#2B3035',ink:'#FFFFFF',chip:'#FFD833',lo:'#2B3035',hi:'#FFFFFF',water:'#23C9FF'},
+  {id:'cyber',name:'Cyber night',look:'halftone',paper:'#17191C',land:'#2B3035',ink:'#C1EF43',chip:'#C1EF43',lo:'#2B3035',hi:'#C1EF43',water:'#004D66'},
+  {id:'starlight',name:'Starlight',look:'ridges',paper:'#FFFAE5',land:'#FFD833',ink:'#1A1500',chip:'#FFFFFF',lo:'#FFEC99',hi:'#665300',water:'#99E6FF'},
+  {id:'inkpaper',name:'Ink and paper',look:'outline',paper:'#FAF9F9',land:'#EBE8E6',ink:'#1C1A17',chip:'#FA78E5',lo:'#EBE8E6',hi:'#342F29',water:'#CED2D7'},
+  {id:'violet',name:'Ultraviolet',look:'heat',paper:'#F2F0FF',land:'#D2CCFF',ink:'#261E66',chip:'#FFFFFF',lo:'#E0DBFF',hi:'#3E2BCC',water:'#99E6FF'}
 ];
 const RATIOS={'1:1':[1600,1600],'4:5':[1600,2000],'16:9':[1920,1080],'3:4':[1500,2000]};
 
-const S={country:'VNM',province:null,preset:'atlas',fill:'land',fillType:'gradient',lines:'contours',cc:{},ratio:'1:1',pal:{...PALETTES[0]},palId:'field',
+const S={country:'VNM',province:null,preset:'atlas',fill:'land',fillType:'gradient',lines:'contours',ratio:'1:1',pal:{...PALETTES[0]},palId:'field',
   res:220,levels:22,smooth:1,exag:2,gap:14,pad:10,
   o:{outline:true,neighbors:true,pin:true,coords:true,scale:true,grid:false,grain:true,transparent:false},
   pinText:'',dem:null,demName:'',autoDem:true,l:{city:false,water:false},cover:null,
@@ -261,27 +265,46 @@ document.querySelectorAll('#style button').forEach(b=>b.onclick=()=>{[S.fill,S.f
   if(b.dataset.v==='outline'){S.o.outline=true;$('#oOutline').checked=true}syncUI();render()});
 ['fill','fillType','lines','photoSrc'].forEach(k=>$('#'+k).onchange=e=>{S[k]=e.target.value;syncUI();render()});
 // fill ramp and water follow the palette unless the user picks custom colors
-function colors(){const P=S.pal,hex=c=>d3.color(c).formatHex();
-  return{lo:S.cc.lo||hex(S.fill==='plants'?d3.interpolateLab(P.paper,P.land)(.45):P.land),hi:S.cc.hi||hex(P.ink),water:S.cc.water||hex(d3.interpolateLab(P.paper,'#3B7EA1')(.5))}}
+function colors(){return S.pal}
 function syncUI(){
   ['fill','fillType','lines','photoSrc'].forEach(k=>$('#'+k).value=S[k]);
   $('#fillTypeL').hidden=!['elev','plants'].includes(S.fill);$('#photoL').hidden=S.fill!=='photo';
   const hit=Object.keys(PRESETS).find(k=>PRESETS[k].join()===[S.fill,S.fillType,S.lines].join());
   document.querySelectorAll('#style button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===hit));
-  const K=colors();$('#rLo').value=K.lo;$('#rHi').value=K.hi;$('#rWater').value=K.water;
 }
-[['rLo','lo'],['rHi','hi'],['rWater','water']].forEach(([id,k])=>$('#'+id).oninput=e=>{S.cc[k]=e.target.value;debounced()});
-$('#rReset').onclick=()=>{S.cc={};syncUI();render()};
+
 $('#ratio').onchange=e=>{S.ratio=e.target.value;render()};
+// ---------- token colors ----------
+const TOKENS=JSON.parse($('#tokens').textContent),TOKEN_NAME={};
+TOKENS.forEach(f=>f.sw.forEach(([sh,h])=>TOKEN_NAME[h]??=`${f.set} · ${f.fam} ${sh}`));
+const SLOTS=[['paper','Paper'],['land','Land'],['ink','Ink'],['chip','Chip'],['lo','Fill low'],['hi','Fill high'],['water','Water']];
+PALETTES.forEach(p=>SLOTS.forEach(([k])=>console.assert(TOKEN_NAME[p[k]],`${p.name}.${k} ${p[k]} is not a token`)));
 const sw=$('#swatches');
-PALETTES.forEach(p=>{const b=document.createElement('button');b.className='sw';b.title=p.name;b.setAttribute('aria-label',p.name+' palette');
-  b.style.background=p.paper;b.innerHTML=`<i style="background:${p.land}"></i><b style="background:${p.ink}"></b>`;
+PALETTES.forEach(p=>{const b=document.createElement('button');b.className='sw';b.title=`${p.name} · best with ${p.look}`;b.setAttribute('aria-label',`${p.name} theme, best with ${p.look}`);
+  b.style.background=p.paper;b.innerHTML=`<i style="background:linear-gradient(90deg,${p.lo},${p.hi})"></i><b style="background:${p.ink}"></b>`;
   b.setAttribute('aria-pressed',p.id===S.palId);
-  b.onclick=()=>{S.pal={...p};S.palId=p.id;S.cc={};syncColors();syncUI();sw.querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b));render()};
+  // a theme sets all seven colors and switches to the look it was tuned for
+  b.onclick=()=>{S.pal={...p};S.palId=p.id;[S.fill,S.fillType,S.lines]=PRESETS[p.look];syncColors();syncUI();sw.querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b));render()};
   sw.appendChild(b)});
-function syncColors(){$('#cPaper').value=S.pal.paper;$('#cLand').value=S.pal.land;$('#cInk').value=S.pal.ink;$('#cChip').value=S.pal.chip}
+const slots=$('#slots'),picker=$('#picker');
+SLOTS.forEach(([k,label])=>{const b=document.createElement('button');b.type='button';b.className='slot';b.dataset.k=k;
+  b.innerHTML=`<i></i><span>${label}<small></small></span>`;b.onclick=e=>{e.stopPropagation();openPicker(b,k)};slots.appendChild(b)});
+function syncColors(){
+  slots.querySelectorAll('.slot').forEach(b=>{const h=S.pal[b.dataset.k];b.querySelector('i').style.background=h;b.querySelector('small').textContent=TOKEN_NAME[h]||h;b.title=TOKEN_NAME[h]||h});
+  const p=PALETTES.find(p=>p.id===S.palId);$('#themeHint').textContent=p?`${p.name} · tuned for ${p.look[0].toUpperCase()+p.look.slice(1)}`:'';
+}
+function openPicker(btn,k){
+  let html='',set='';
+  for(const f of TOKENS){if(f.set!==set){set=f.set;html+=`<h3>${set}</h3>`}
+    html+=`<div class="fam"><span title="${f.fam}">${f.fam}</span>${f.sw.map(([sh,h])=>`<button type="button" data-h="${h}" style="background:${h}" title="${f.fam} ${sh} ${h}" aria-label="${f.fam} ${sh}" aria-pressed="${h===S.pal[k]}"></button>`).join('')}</div>`}
+  picker.innerHTML=html;picker.hidden=false;
+  const r=btn.getBoundingClientRect();picker.style.left=Math.min(innerWidth-340,r.right+8)+'px';picker.style.top=Math.max(8,Math.min(innerHeight-picker.offsetHeight-8,r.top-40))+'px';
+  picker.onclick=e=>{const h=e.target.dataset?.h;if(!h)return;S.pal[k]=h;S.palId=null;sw.querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',false));syncColors();picker.hidden=true;debounced()};
+  picker.querySelector('[aria-pressed=true]')?.scrollIntoView({block:'center'});
+}
+document.addEventListener('click',e=>{if(!picker.hidden&&!picker.contains(e.target))picker.hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')picker.hidden=true});
 syncColors();syncUI();
-[['#cPaper','paper'],['#cLand','land'],['#cInk','ink'],['#cChip','chip']].forEach(([id,k])=>$(id).oninput=e=>{S.pal[k]=e.target.value;debounced()});
 ['res','levels','smooth','exag','gap','pad'].forEach(k=>{const el=$('#'+k),out=el.nextElementSibling;
   const show=()=>out.textContent=el.value;show();el.oninput=()=>{S[k]=+el.value;show();debounced()}});
 [['oOutline','outline'],['oNeighbors','neighbors'],['oPin','pin'],['oCoords','coords'],['oScale','scale'],['oGrid','grid'],['oGrain','grain'],['oTransparent','transparent']]

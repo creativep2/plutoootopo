@@ -6,7 +6,7 @@ Usage:
   curl -L -o ne_admin1.geojson https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson
   python3 prep_data.py ne_admin1.geojson template.html terrain-press.html path/to/vpd/json/geojson
 """
-import json, sys, glob, unicodedata
+import json, sys, glob, os, unicodedata
 
 C = {'VNM': 'Vietnam', 'THA': 'Thailand', 'LAO': 'Laos', 'KHM': 'Cambodia', 'MMR': 'Myanmar',
      'MYS': 'Malaysia', 'IDN': 'Indonesia', 'PHL': 'Philippines', 'SGP': 'Singapore',
@@ -59,7 +59,8 @@ def main(src, template, dst, vn_dir=None):
         res.append({'c': p['adm0_a3'], 'n': unicodedata.normalize('NFC', p['name'] or p['gn_name']), 't': p['type_en'], 'g': P})
     res.sort(key=lambda r: (C[r['c']], r['n'] or ''))
     data = json.dumps({'countries': C, 'provinces': res}, separators=(',', ':')).replace('</', '<\\/')
-    html = open(template).read().replace('__DATA__', data)
+    colors = open(os.path.join(os.path.dirname(os.path.abspath(template)), 'brand-colors.json')).read().strip()  # Pluto token sets
+    html = open(template).read().replace('__DATA__', data).replace('__COLORS__', colors)
     open(dst, 'w').write(html)
     print(f'{len(res)} regions, {len(data)/1e6:.2f} MB data -> {dst}')
 
