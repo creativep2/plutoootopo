@@ -1,0 +1,6 @@
+// Cloudflare Workers build config: deploys only the relay in worker/proxy.js (the site itself is on GitHub Pages)
+{
+  "name": "plutoootopo",
+  "main": "worker/proxy.js",
+  "compatibility_date": "2026-10-01"
+}
