@@ -37,9 +37,8 @@ select,input[type=text],input[type=password]{font:inherit;padding:7px 8px;border
 input[type=range]{width:100%;accent-color:var(--accent)}
 .rng{display:grid;grid-template-columns:88px 1fr 46px;align-items:center;gap:8px;font-size:12px}
 .rng output{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:7px;overflow:hidden}
-.seg button{font:inherit;font-size:11.5px;padding:7px 2px;border:0;background:transparent;color:var(--fg);cursor:pointer;border-right:1px solid var(--line)}
-.seg button:last-child{border-right:0}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{font:inherit;font-size:11.5px;padding:7px 2px;border:0;background:var(--panel);color:var(--fg);cursor:pointer}
 .seg button[aria-pressed=true]{background:var(--fg);color:var(--panel)}
 .swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .slots{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -93,8 +92,6 @@ main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 #drawBox[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent)}
 #art{touch-action:none;cursor:grab}
-.seg button:nth-child(-n+6){border-bottom:1px solid var(--line)}
-.seg button:nth-child(3n){border-right:0}
 details summary{cursor:pointer;font-size:12px;color:var(--muted);padding:2px 0}
 details[open] summary{margin-bottom:8px}
 details .btn{margin-top:8px;width:100%}
@@ -120,12 +117,14 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
       <button data-v="atlas">Atlas</button><button data-v="contour">Contour</button><button data-v="heat">Heat</button>
       <button data-v="bands">Bands</button><button data-v="plants">Plants</button><button data-v="photo">Photo</button>
       <button data-v="halftone">Halftone</button><button data-v="ridges">Ridges</button><button data-v="outline">Outline</button>
+      <button data-v="duotone">Duotone</button><button data-v="posterize">Posterize</button><button data-v="riso">Riso</button>
+      <button data-v="stencil">Stencil</button>
     </div>
     <div class="row">
-      <label>Fill<select id="fill"><option value="land">Flat land</option><option value="elev">Elevation</option><option value="plants">Plant density</option><option value="photo">Photo</option><option value="none">None</option></select></label>
-      <label>Lines<select id="lines"><option value="contours">Contours</option><option value="dots">Halftone dots</option><option value="ridges">Ridgelines</option><option value="none">None</option></select></label>
+      <label>Fill<select id="fill"><option value="land">Flat land</option><option value="elev">Elevation</option><option value="plants">Plant density</option><option value="photo">Photo</option><option value="solid">Solid ink</option><option value="none">None</option></select></label>
+      <label>Lines<select id="lines"><option value="contours">Contours</option><option value="dots">Halftone dots</option><option value="ridges">Ridgelines</option><option value="riso">Two-ink dots</option><option value="none">None</option></select></label>
     </div>
-    <label id="fillTypeL">Fill type<select id="fillType"><option value="gradient">Gradient</option><option value="bands">Solid bands</option></select></label>
+    <label id="fillTypeL">Fill type<select id="fillType"></select></label>
     <label id="photoL">Photo source<select id="photoSrc">
       <option value="esri">Satellite · Esri World Imagery</option>
       <option value="s2">Satellite · Sentinel-2 cloudless 2016</option>
@@ -158,6 +157,21 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
   </section>
 
   <section>
+    <h2>Texture</h2>
+    <div class="checks">
+      <label><input type="checkbox" id="tDots" checked> Dots</label>
+      <label><input type="checkbox" id="tGrid"> Grid</label>
+    </div>
+    <label>Apply to<select id="tWhere"><option value="land">Inside the area</option><option value="all">Whole artboard</option></select></label>
+    <div class="rng"><span>Dot spacing</span><input type="range" id="dotGap" min="3" max="60" step="1" value="6"><output></output></div>
+    <div class="rng"><span>Dot size</span><input type="range" id="dotSize" min="0.3" max="8" step="0.1" value="0.9"><output></output></div>
+    <div class="rng"><span>Dot strength</span><input type="range" id="dotOp" min="0.05" max="1" step="0.05" value="0.15"><output></output></div>
+    <div class="rng"><span>Grid spacing</span><input type="range" id="gridGap" min="10" max="400" step="5" value="100"><output></output></div>
+    <div class="rng"><span>Grid line</span><input type="range" id="gridW" min="0.5" max="6" step="0.5" value="1"><output></output></div>
+    <div class="rng"><span>Grid strength</span><input type="range" id="gridOp" min="0.05" max="1" step="0.05" value="0.15"><output></output></div>
+  </section>
+
+  <section>
     <h2>Overlays</h2>
     <div class="checks">
       <label><input type="checkbox" id="oOutline" checked> Outline</label>
@@ -165,7 +179,6 @@ button.btn.sq{flex:0;min-width:38px;padding:9px 10px}
       <label><input type="checkbox" id="oPin" checked> Pin label</label>
       <label><input type="checkbox" id="oCoords" checked> Coordinates</label>
       <label><input type="checkbox" id="oScale" checked> Scale bar</label>
-      <label><input type="checkbox" id="oGrid"> Grid</label>
       <label><input type="checkbox" id="oGrain" checked> Grain</label>
       <label><input type="checkbox" id="oTransparent"> No paper</label>
     </div>
@@ -225,7 +238,12 @@ const PALETTES=[
   {id:'glacier',name:'Glacier',look:'heat',paper:'#E9FCFB',land:'#90EFED',ink:'#072C2C',chip:'#99FFF5',lo:'#90EFED',hi:'#0A4342',water:'#66D9FF'},
   {id:'solar',name:'Solar',look:'bands',paper:'#FFEEE5',land:'#FFBB99',ink:'#331100',chip:'#FFFFFF',lo:'#FFDDCC',hi:'#993300',water:'#CCF2FF'},
   {id:'jungle',name:'Jungle',look:'plants',paper:'#F8F7F4',land:'#EDFBC9',ink:'#013227',chip:'#E3F8AA',lo:'#F5FDE0',hi:'#027E61',water:'#83E7F4'},
-  {id:'darkroom',name:'Darkroom',look:'photo',paper:'#17191C',land:'#2B3035',ink:'#FFFFFF',chip:'#FFD833',lo:'#2B3035',hi:'#FFFFFF',water:'#23C9FF'},
+  {id:'daylight',name:'Daylight',look:'photo',paper:'#FAF9F9',land:'#EBE8E6',ink:'#17191C',chip:'#FFD833',lo:'#EBE8E6',hi:'#17191C',water:'#23C9FF'},
+  {id:'darkroom',name:'Darkroom',look:'duotone',paper:'#17191C',land:'#2B3035',ink:'#D1F372',chip:'#2B3035',lo:'#17191C',hi:'#D1F372',water:'#17191C'},
+  {id:'cyanotype',name:'Cyanotype',look:'duotone',paper:'#000A33',land:'#001466',ink:'#E5EBFF',chip:'#001466',lo:'#001466',hi:'#CCF2FF',water:'#000A33'},
+  {id:'sunset',name:'Sunset',look:'posterize',paper:'#FFFAE5',land:'#FF7733',ink:'#331100',chip:'#FFFAE5',lo:'#FFD833',hi:'#331100',water:'#FFFAE5'},
+  {id:'riso',name:'Riso',look:'riso',paper:'#F8F7F4',land:'#F8F7F4',ink:'#244FFF',chip:'#FA78E5',lo:'#F8F7F4',hi:'#244FFF',water:'#F8F7F4'},
+  {id:'stencil',name:'Stencil',look:'stencil',paper:'#FFEEE5',land:'#FFBB99',ink:'#FF5500',chip:'#FFEEE5',lo:'#FFBB99',hi:'#FF5500',water:'#FFEEE5'},
   {id:'cyber',name:'Cyber night',look:'halftone',paper:'#17191C',land:'#2B3035',ink:'#C1EF43',chip:'#C1EF43',lo:'#2B3035',hi:'#C1EF43',water:'#004D66'},
   {id:'starlight',name:'Starlight',look:'ridges',paper:'#FFFAE5',land:'#FFD833',ink:'#1A1500',chip:'#FFFFFF',lo:'#FFEC99',hi:'#665300',water:'#99E6FF'},
   {id:'inkpaper',name:'Ink and paper',look:'outline',paper:'#FAF9F9',land:'#EBE8E6',ink:'#1C1A17',chip:'#FA78E5',lo:'#EBE8E6',hi:'#342F29',water:'#CED2D7'},
@@ -235,9 +253,10 @@ const RATIOS={'1:1':[1600,1600],'4:5':[1600,2000],'16:9':[1920,1080],'3:4':[1500
 
 const S={country:'VNM',province:null,preset:'atlas',fill:'land',fillType:'gradient',lines:'contours',ratio:'1:1',pal:{...PALETTES[0]},palId:'field',
   res:220,levels:22,smooth:1,exag:2,gap:14,pad:10,
-  o:{outline:true,neighbors:true,pin:true,coords:true,scale:true,grid:false,grain:true,transparent:false},
+  o:{outline:true,neighbors:true,pin:true,coords:true,scale:true,grain:true,transparent:false},
   pinText:'',dem:null,demName:'',autoDem:true,l:{city:false,water:false},cover:null,
-  view:{k:1,c:null},photoSrc:'esri',photo:null};
+  view:{k:1,c:null},photoSrc:'esri',photo:null,
+  tex:{dots:true,grid:false,where:'land',dotGap:6,dotSize:.9,dotOp:.15,gridGap:100,gridW:1,gridOp:.15}};
 
 function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -259,16 +278,21 @@ pSel.onchange=()=>{S.custom=null;S.view={k:1,c:null};$('#clearBox').hidden=true;
 // ---------- controls ----------
 // presets only set Fill, Fill type and Lines; every look is one of those combinations
 const PRESETS={atlas:['land','gradient','contours'],contour:['none','gradient','contours'],heat:['elev','gradient','contours'],
-  bands:['elev','bands','none'],plants:['plants','gradient','none'],photo:['photo','gradient','none'],
-  halftone:['land','gradient','dots'],ridges:['none','gradient','ridges'],outline:['none','gradient','none']};
+  bands:['elev','bands','none'],plants:['plants','gradient','none'],photo:['photo','natural','none'],
+  halftone:['land','gradient','dots'],ridges:['none','gradient','ridges'],outline:['none','gradient','none'],
+  duotone:['photo','duotone','none'],posterize:['elev','posterize','none'],riso:['none','gradient','riso'],stencil:['solid','gradient','contours']};
+// fill types each fill offers; the first is the default
+const FILL_TYPES={elev:[['gradient','Gradient'],['bands','Solid bands'],['posterize','Posterize (3 tones)']],plants:[['gradient','Gradient'],['bands','Solid bands']],photo:[['natural','Natural color'],['duotone','Duotone (2 tokens)']]};
 document.querySelectorAll('#style button').forEach(b=>b.onclick=()=>{[S.fill,S.fillType,S.lines]=PRESETS[b.dataset.v];
   if(b.dataset.v==='outline'){S.o.outline=true;$('#oOutline').checked=true}syncUI();render()});
 ['fill','fillType','lines','photoSrc'].forEach(k=>$('#'+k).onchange=e=>{S[k]=e.target.value;syncUI();render()});
 // fill ramp and water follow the palette unless the user picks custom colors
 function colors(){return S.pal}
 function syncUI(){
+  const ft=FILL_TYPES[S.fill]||[['gradient','']];if(!ft.some(o=>o[0]===S.fillType))S.fillType=ft[0][0];
+  $('#fillType').innerHTML=ft.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
   ['fill','fillType','lines','photoSrc'].forEach(k=>$('#'+k).value=S[k]);
-  $('#fillTypeL').hidden=!['elev','plants'].includes(S.fill);$('#photoL').hidden=S.fill!=='photo';
+  $('#fillTypeL').hidden=!FILL_TYPES[S.fill];$('#photoL').hidden=S.fill!=='photo';
   const hit=Object.keys(PRESETS).find(k=>PRESETS[k].join()===[S.fill,S.fillType,S.lines].join());
   document.querySelectorAll('#style button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===hit));
 }
@@ -307,7 +331,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')picker.hidden=true})
 syncColors();syncUI();
 ['res','levels','smooth','exag','gap','pad'].forEach(k=>{const el=$('#'+k),out=el.nextElementSibling;
   const show=()=>out.textContent=el.value;show();el.oninput=()=>{S[k]=+el.value;show();debounced()}});
-[['oOutline','outline'],['oNeighbors','neighbors'],['oPin','pin'],['oCoords','coords'],['oScale','scale'],['oGrid','grid'],['oGrain','grain'],['oTransparent','transparent']]
+[['oOutline','outline'],['oNeighbors','neighbors'],['oPin','pin'],['oCoords','coords'],['oScale','scale'],['oGrain','grain'],['oTransparent','transparent']]
   .forEach(([id,k])=>$('#'+id).onchange=e=>{S.o[k]=e.target.checked;render()});
 $('#pinText').oninput=e=>{S.pinText=e.target.value;debounced()};
 const key=$('#apikey');key.value=load('ot_key')||'';key.oninput=()=>{store('ot_key',key.value.trim());updateDl()};
@@ -375,6 +399,10 @@ art.addEventListener('pointerup',e=>{if(!drag)return;const d=drag;drag=null;art.
   S.view={k:S.view.k,c:S.proj.invert([S.W/2-dx,S.H/2-dy])};S.proj=projFor(currentFeature());
   css={s:css.s,t:[css.t[0]+dx,css.t[1]+dy]};cssApply();settle()});
 
+[['tDots','dots'],['tGrid','grid']].forEach(([id,k])=>$('#'+id).onchange=e=>{S.tex[k]=e.target.checked;render()});
+$('#tWhere').onchange=e=>{S.tex.where=e.target.value;render()};
+['dotGap','dotSize','dotOp','gridGap','gridW','gridOp'].forEach(k=>{const el=$('#'+k),out=el.nextElementSibling;
+  const show=()=>out.textContent=el.value;show();el.oninput=()=>{S.tex[k]=+el.value;show();debounced()}});
 let tmr;function debounced(){clearTimeout(tmr);tmr=setTimeout(render,120)}
 
 // ---------- geometry helpers ----------
@@ -642,12 +670,18 @@ function render(){
   const gp=d3.geoPath(d3.geoTransform({point(x,y){this.stream.point(f2(x*G.cs),f2(y*G.cs))}}));
   const focus=path(feat);
   const out=[];
+  // dot screen and line grid; ink color, except light ink on solid-ink fills so it stays visible
+  const texInk=S.fill==='solid'&&S.tex.where==='land'?P.chip:P.ink;
+  const texture=()=>{let t='';if(S.tex.dots)t+=`<rect id="dot-texture" width="${W}" height="${H}" fill="url(#dots)"/>`;
+    if(S.tex.grid){const g=S.tex.gridGap;let d='';for(let x=g;x<W;x+=g)d+=`M${f2(x)} 0V${H}`;for(let y=g;y<H;y+=g)d+=`M0 ${f2(y)}H${W}`;
+      t+=`<path id="grid" d="${d}" stroke="${texInk}" stroke-opacity="${S.tex.gridOp}" stroke-width="${S.tex.gridW}" fill="none"/>`}
+    return t};
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Schibsted Grotesk, Helvetica, Arial, sans-serif">`);
   out.push(`<defs><clipPath id="clip"><path d="${focus}"/></clipPath>
-    <pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="0.9" fill="${P.ink}" fill-opacity=".14"/></pattern>
+    <pattern id="dots" width="${S.tex.dotGap}" height="${S.tex.dotGap}" patternUnits="userSpaceOnUse"><circle cx="${S.tex.dotGap/2}" cy="${S.tex.dotGap/2}" r="${Math.min(S.tex.dotSize,S.tex.dotGap/2)}" fill="${texInk}" fill-opacity="${S.tex.dotOp}"/></pattern>
     <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0"/><feComposite in2="SourceGraphic" operator="in"/></filter></defs>`);
   if(!S.o.transparent)out.push(`<rect width="${W}" height="${H}" fill="${P.paper}"/>`);
-  if(S.o.grid){const gs=Math.round(Math.min(W,H)/16);let d='';for(let x=gs;x<W;x+=gs)d+=`M${x} 0V${H}`;for(let y=gs;y<H;y+=gs)d+=`M0 ${y}H${W}`;out.push(`<path d="${d}" stroke="${P.ink}" stroke-opacity=".12" stroke-width="1" fill="none"/>`)}
+  if(S.tex.where==='all')out.push(texture());
   if(S.o.neighbors){
     const others=FEATS.filter(f=>f!==feat&&!(feat.type==='FeatureCollection'&&feat.features.includes(f)));
     const view=d3.geoPath(proj);let d='';
@@ -658,23 +692,31 @@ function render(){
   const lineD=(i)=>gp(cont[i]);
   const K=colors(),LC=wantCover&&haveCover?coverLayers(proj,W,H,K):null;
   // 1. fill
-  if(S.fill!=='none')out.push(`<path d="${focus}" fill="${S.fill==='elev'||S.fill==='plants'?K.lo:P.land}"/>`);
+  if(S.fill!=='none')out.push(`<path d="${focus}" fill="${S.fill==='solid'?P.ink:S.fill==='elev'||S.fill==='plants'?K.lo:P.land}"/>`);
   out.push(`<g clip-path="url(#clip)">`);
-  if(S.fill==='land')out.push(`<rect width="${W}" height="${H}" fill="url(#dots)"/>`);
-  else if(S.fill==='elev'&&S.fillType==='gradient'){
+  if(S.fill==='elev'&&S.fillType==='gradient'){
     const sh=hillshade(G,mpp),L=lutOf(K.lo,K.hi),rg=G.hi-G.lo||1;
     const url=rasterURL(G.nx,G.ny,k=>{if(!G.mask[k])return null;const c=L[Math.max(0,Math.min(255,(G.val[k]-G.lo)/rg*255|0))],m=.72+.28*sh[k];return[c[0]*m,c[1]*m,c[2]*m]});
     out.push(`<image id="elevation" href="${url}" width="${G.nx*G.cs}" height="${G.ny*G.cs}" preserveAspectRatio="none"/>`)}
+  else if(S.fill==='elev'&&S.fillType==='posterize'){
+    // three flat tones (fill low, land, fill high) split at the 1/3 and 2/3 quantiles so each tone covers similar area
+    const v=[];for(let k=0;k<G.val.length;k++)if(G.mask[k])v.push(G.val[k]);v.sort((a,b)=>a-b);
+    const q=[v[v.length/3|0],v[2*v.length/3|0]];
+    out.push(`<g id="elevation">${d3.contours().size([G.nx,G.ny]).thresholds(q)(grid).map((c,i)=>`<path d="${gp(c)}" fill="${i?K.hi:P.land}"/>`).join('')}</g>`)}
   else if(S.fill==='elev'){const ramp=d3.interpolateLab(K.lo,K.hi);
     out.push(`<g id="elevation">${cont.map((c,i)=>`<path d="${lineD(i)}" fill="${ramp((i+1)/(cont.length+1))}"/>`).join('')}</g>`)}
   else if(S.fill==='plants'&&LC)out.push(LC.plants);
   else if(S.fill==='photo'&&havePhoto){const a=proj([PH.bb[0],PH.bb[1]]),c=proj([PH.bb[2],PH.bb[3]]);
-    out.push(`<image id="photo" href="${PH.url}" x="${f2(a[0])}" y="${f2(a[1])}" width="${f2(c[0]-a[0])}" height="${f2(c[1]-a[1])}" preserveAspectRatio="none"/>`)}
+    // duotone: greyscale the photo, then map dark -> fill low and light -> fill high
+    if(S.fillType==='duotone'){const a=d3.rgb(K.lo),b=d3.rgb(K.hi),t=c=>`${(a[c]/255).toFixed(3)} ${(b[c]/255).toFixed(3)}`;
+      out.push(`<filter id="duo" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncR type="table" tableValues="${t('r')}"/><feFuncG type="table" tableValues="${t('g')}"/><feFuncB type="table" tableValues="${t('b')}"/></feComponentTransfer></filter>`)}
+    out.push(`<image id="photo" ${S.fillType==='duotone'?'filter="url(#duo)" ':''}href="${PH.url}" x="${f2(a[0])}" y="${f2(a[1])}" width="${f2(c[0]-a[0])}" height="${f2(c[1]-a[1])}" preserveAspectRatio="none"/>`)}
+  if(S.tex.where==='land')out.push(texture());
   // 2. lines
-  const onFill=S.fill!=='none',lineInk=S.fill==='photo'?P.paper:P.ink;
+  const onFill=S.fill!=='none',lineInk=S.fill==='photo'?P.paper:S.fill==='solid'?P.chip:P.ink;
   if(S.lines==='contours'){out.push(`<g id="contours" fill="none" stroke="${lineInk}" stroke-linejoin="round">`);
     cont.forEach((c,i)=>{const idx=Math.round(ths[i]/step)%5===0;
-      out.push(onFill?`<path d="${lineD(i)}" stroke-opacity="${idx?.55:.28}" stroke-width="${idx?1.5:.8}"/>`:`<path d="${lineD(i)}" stroke-width="${idx?2.2:1}"/>`)});
+      out.push(onFill?`<path d="${lineD(i)}" stroke-opacity="${S.fill==='solid'?(idx?.95:.6):idx?.55:.28}" stroke-width="${idx?1.5:.8}"/>`:`<path d="${lineD(i)}" stroke-width="${idx?2.2:1}"/>`)});
     out.push(`</g>`)}
   else if(S.lines==='dots'){
     const sh=hillshade(G,mpp);const gap=S.gap,maxR=gap*.5;let d='';
@@ -683,6 +725,16 @@ function render(){
       const e=(G.val[k]-G.lo)/(G.hi-G.lo||1);const t=Math.min(1,(1-sh[k])*.85+e*.2);const r=maxR*Math.sqrt(Math.max(.04,t));
       d+=`M${f2(x-r)} ${f2(y)}a${f2(r)} ${f2(r)} 0 1 0 ${f2(2*r)} 0a${f2(r)} ${f2(r)} 0 1 0 ${f2(-2*r)} 0`;}
     out.push(`<path id="dots" d="${d}" fill="${lineInk}" fill-opacity="${onFill?.75:1}"/>`)}
+  else if(S.lines==='riso'){
+    // risograph look: two dot screens in ink and chip, slightly misregistered and multiplied
+    const sh=hillshade(G,mpp),gap=S.gap,maxR=gap*.5;let dA='',dB='';
+    const dot=(x,y,r)=>`M${f2(x-r)} ${f2(y)}a${f2(r)} ${f2(r)} 0 1 0 ${f2(2*r)} 0a${f2(r)} ${f2(r)} 0 1 0 ${f2(-2*r)} 0`;
+    for(let y=gap/2,row=0;y<H;y+=gap*.866,row++)for(let x=(row%2?gap:gap/2);x<W;x+=gap){
+      const i=Math.min(G.nx-1,x/G.cs|0),j=Math.min(G.ny-1,y/G.cs|0),k=j*G.nx+i;if(!G.mask[k])continue;
+      const e=(G.val[k]-G.lo)/(G.hi-G.lo||1);
+      dA+=dot(x,y,maxR*Math.sqrt(Math.max(.03,Math.min(1,(1-sh[k])*.9))));
+      dB+=dot(x+gap*.28,y+gap*.2,maxR*.85*Math.sqrt(Math.max(.03,e)))}
+    out.push(`<g id="riso" style="mix-blend-mode:multiply"><path d="${dB}" fill="${P.chip}" style="mix-blend-mode:multiply"/><path d="${dA}" fill="${P.ink}" style="mix-blend-mode:multiply"/></g>`)}
   else if(S.lines==='ridges'){
     // ridgelines hide what is behind them, so each row is backed with the land (or paper) color
     const gap=S.gap,amp=gap*S.exag*4;const bg=onFill||S.o.transparent?P.land:P.paper;out.push(`<g id="ridges">`);
